@@ -33,7 +33,7 @@ RING_SPEED = 5  # Reduced from 8 to make the ring move slower
 CIRCLE_RADIUS = 60
 DOT_RADIUS = 6
 DOT_OFFSET = CIRCLE_RADIUS // 2  # Halfway between center and edge
-PICKUP_RANGE = 80  # Range within which the player can pick up the ring
+PICKUP_RANGE = 70  # Range within which the player can pick up the ring
 
 # Set up the game window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -42,7 +42,7 @@ clock = pygame.time.Clock()
 
 # Create fonts
 score_font = pygame.font.Font(None, 36)
-instructions_font = pygame.font.Font(None, 24)  # Smaller font for instructions
+instructions_font = pygame.font.Font(None, 16)  # Smaller font for instructions
 
 def draw_rink(surface):
     # Draw ice surface
@@ -239,6 +239,7 @@ all_sprites.add(goal2)
 
 # Game variables
 score = 0
+show_instructions = True  # New variable to track if instructions should be shown
 
 # Game loop
 running = True
@@ -257,20 +258,25 @@ while running:
                 direction = player.get_shoot_direction()
                 ring.velocity = [direction[0] * RING_SPEED, 
                                direction[1] * RING_SPEED]
+            elif event.key == pygame.K_ESCAPE:  # Toggle instructions with Escape key
+                show_instructions = not show_instructions
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
-            # Calculate distance between player and ring
-            dx = ring.rect.centerx - player.rect.centerx
-            dy = ring.rect.centery - player.rect.centery
-            distance = math.sqrt(dx * dx + dy * dy)
-            
-            # Toggle pickup if within range
-            if distance <= PICKUP_RANGE:
-                player.has_ring = not player.has_ring  # Toggle pickup state
-                if player.has_ring:
-                    # Position ring at bottom right of player with offset
-                    ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
-                    ring.active = False  # Stop the ring from moving
-                    ring.velocity = [0, 0]  # Reset velocity
+            if show_instructions:
+                show_instructions = False  # Clear instructions on first click
+            else:
+                # Calculate distance between player and ring
+                dx = ring.rect.centerx - player.rect.centerx
+                dy = ring.rect.centery - player.rect.centery
+                distance = math.sqrt(dx * dx + dy * dy)
+                
+                # Toggle pickup if within range
+                if distance <= PICKUP_RANGE:
+                    player.has_ring = not player.has_ring  # Toggle pickup state
+                    if player.has_ring:
+                        # Position ring at bottom right of player with offset
+                        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
+                        ring.active = False  # Stop the ring from moving
+                        ring.velocity = [0, 0]  # Reset velocity
 
     # Get keys
     keys = pygame.key.get_pressed()
@@ -303,15 +309,54 @@ while running:
     draw_rink(screen)
     all_sprites.draw(screen)
     
-    # Draw score (moved down and to the right)
+    # Draw score
     score_text = score_font.render(f"Score: {score}", True, RINK_BLUE)
-    screen.blit(score_text, (WIDTH - 160, 20))  # Moved to top-right corner
+    screen.blit(score_text, (WIDTH - 160, 20))
 
-    # Draw instructions (moved to left side)
-    instructions = instructions_font.render("ARROW KEYS: Move", True, RINK_BLUE)
-    screen.blit(instructions, (20, HEIGHT - 50))
-    instructions2 = instructions_font.render("SPACE: Shoot", True, RINK_BLUE)
-    screen.blit(instructions2, (20, HEIGHT - 35))
+    # Draw instructions popup if needed
+    if show_instructions:
+        # Create a semi-transparent overlay
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 128))  # Black with 50% opacity
+        screen.blit(overlay, (0, 0))
+        
+        # Instructions text
+        instructions = [
+            "HOW TO PLAY:",
+            "ARROW KEYS or WASD: Move",
+            "LEFT CLICK near ring: Pick up",
+            "LEFT CLICK while holding: Drop",
+            "SPACE: Shoot ring",
+            "AIM: Mouse position determines",
+            "     shooting direction",
+            "Get close to ring to pick it up",
+            "Score by shooting into goals",
+            "",
+            "Click anywhere to start!",
+            "Press ESC to show/hide instructions"
+        ]
+        
+        # Calculate total height and width of instructions
+        total_height = len(instructions) * 16
+        max_width = max(instructions_font.size(text)[0] for text in instructions)
+        start_y = (HEIGHT - total_height) // 2
+        start_x = (WIDTH - max_width) // 2
+        
+        # Draw background rectangle for text
+        padding = 20
+        bg_rect = pygame.Rect(
+            start_x - padding,
+            start_y - padding,
+            max_width + padding * 2,
+            total_height + padding * 2
+        )
+        pygame.draw.rect(screen, (0, 0, 0), bg_rect)  # Black background
+        pygame.draw.rect(screen, (255, 255, 255), bg_rect, 2)  # White border
+        
+        for i, text in enumerate(instructions):
+            instruction_text = instructions_font.render(text, True, (255, 255, 255))  # White text
+            text_rect = instruction_text.get_rect(centerx=WIDTH//2, y=start_y + i * 16)
+            screen.blit(instruction_text, text_rect)
 
     # Update display
     pygame.display.flip()
