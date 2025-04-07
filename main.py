@@ -36,6 +36,10 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Ringette Game")
 clock = pygame.time.Clock()
 
+# Create fonts
+score_font = pygame.font.Font(None, 36)
+instructions_font = pygame.font.Font(None, 24)  # Smaller font for instructions
+
 def draw_rink(surface):
     # Draw ice surface
     surface.fill(ICE_WHITE)
@@ -125,7 +129,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
         self.has_ring = False
-        self.direction = [0, 0]
+        self.direction = [1, 0]  # Default direction to right
 
     def update(self, keys=None):
         if keys:
@@ -156,11 +160,16 @@ class Ring(pygame.sprite.Sprite):
         self.velocity = [0, 0]
         self.active = False
         self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        self.shoot_cooldown = 0  # Add cooldown timer
 
     def update(self):
         if self.active:
             self.rect.x += self.velocity[0]
             self.rect.y += self.velocity[1]
+            
+            # Update cooldown
+            if self.shoot_cooldown > 0:
+                self.shoot_cooldown -= 1
 
             # Bounce off walls
             if self.rect.left < 0 or self.rect.right > WIDTH:
@@ -193,7 +202,6 @@ all_sprites.add(goal2)
 
 # Game variables
 score = 0
-font = pygame.font.Font(None, 36)
 
 # Game loop
 running = True
@@ -209,6 +217,7 @@ while running:
                 ring.rect.center = player.rect.center
                 ring.velocity = [player.direction[0] * RING_SPEED, 
                                player.direction[1] * RING_SPEED]
+                ring.shoot_cooldown = 30  # Set cooldown to 30 frames (0.5 seconds at 60 FPS)
 
     # Get keys
     keys = pygame.key.get_pressed()
@@ -217,30 +226,37 @@ while running:
     player.update(keys)
     ring.update()
 
-    # Check for ring pickup
-    if not ring.active and pygame.sprite.collide_rect(player, ring):
-        player.has_ring = True
-        ring.rect.center = player.rect.center
-
-    # Check for goals
+    # Check for goals first
     if ring.active:
         if pygame.sprite.collide_rect(ring, goal1) or pygame.sprite.collide_rect(ring, goal2):
             score += 1
             ring.active = False
             ring.rect.center = (WIDTH // 2, HEIGHT // 2)
             ring.velocity = [0, 0]
+        # Then check for pickup if no goal was scored and cooldown is over
+        elif pygame.sprite.collide_rect(player, ring) and ring.shoot_cooldown == 0:
+            player.has_ring = True
+            ring.active = False
+            ring.rect.center = player.rect.center
+            ring.velocity = [0, 0]
+    # Check for initial pickup when ring is not active
+    elif not ring.active and pygame.sprite.collide_rect(player, ring):
+        player.has_ring = True
+        ring.rect.center = player.rect.center
 
     # Draw
     draw_rink(screen)
     all_sprites.draw(screen)
     
-    # Draw score
-    score_text = font.render(f"Score: {score}", True, RINK_BLUE)
-    screen.blit(score_text, (10, 10))
+    # Draw score (moved down and to the right)
+    score_text = score_font.render(f"Score: {score}", True, RINK_BLUE)
+    screen.blit(score_text, (WIDTH - 160, 20))  # Moved to top-right corner
 
-    # Draw instructions
-    instructions = font.render("Use arrow keys to move, SPACE to shoot", True, RINK_BLUE)
-    screen.blit(instructions, (WIDTH // 2 - 200, HEIGHT - 30))
+    # Draw instructions (moved to left side)
+    instructions = instructions_font.render("ARROW KEYS: Move", True, RINK_BLUE)
+    screen.blit(instructions, (20, HEIGHT - 50))
+    instructions2 = instructions_font.render("SPACE: Shoot", True, RINK_BLUE)
+    screen.blit(instructions2, (20, HEIGHT - 35))
 
     # Update display
     pygame.display.flip()
