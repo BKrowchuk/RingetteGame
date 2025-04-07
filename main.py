@@ -158,16 +158,17 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, keys=None):
         if keys:
-            if keys[pygame.K_LEFT]:
+            # Arrow keys and WASD movement
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 self.rect.x -= PLAYER_SPEED
                 self.direction = [-1, 0]
-            if keys[pygame.K_RIGHT]:
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 self.rect.x += PLAYER_SPEED
                 self.direction = [1, 0]
-            if keys[pygame.K_UP]:
+            if keys[pygame.K_UP] or keys[pygame.K_w]:
                 self.rect.y -= PLAYER_SPEED
                 self.direction = [0, -1]
-            if keys[pygame.K_DOWN]:
+            if keys[pygame.K_DOWN] or keys[pygame.K_s]:
                 self.rect.y += PLAYER_SPEED
                 self.direction = [0, 1]
 
