@@ -2,17 +2,27 @@ import pygame
 import sys
 import random
 import math
+import os
 from assets import *
 
 # Initialize Pygame
 pygame.init()
 
+# Get the base path for assets
+def get_asset_path(filename):
+    # If we're running as a PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, 'assets', filename)
+
 # Load Lynx logo
 try:
-    lynx_logo = pygame.image.load('assets/lynxlogo.svg')
+    lynx_logo = pygame.image.load(get_asset_path('lynxlogo.svg'))
     lynx_logo = pygame.transform.scale(lynx_logo, (PLAYER_WIDTH, PLAYER_HEIGHT))
-except:
-    print("Warning: Could not load lynxlogo.png. Using default player shape.")
+except Exception as e:
+    print(f"Warning: Could not load lynxlogo.svg: {str(e)}. Using default player shape.")
     lynx_logo = None
 
 # Constants

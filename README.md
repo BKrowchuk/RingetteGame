@@ -14,6 +14,22 @@ A simple 2D Ringette game where players can pass and shoot the ring to score goa
    python main.py
    ```
 
+## Building the Executable
+
+To create a standalone executable:
+
+1. Install the build requirements:
+   ```
+   pip install -r requirements.txt
+   ```
+
+2. Run the build script:
+   ```
+   python build.py
+   ```
+
+3. The executable will be created in the `dist` directory.
+
 ## How to Play
 
 - Use arrow keys to move your player
