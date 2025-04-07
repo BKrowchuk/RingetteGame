@@ -30,6 +30,9 @@ WIDTH, HEIGHT = RINK_WIDTH, RINK_HEIGHT
 FPS = 60
 PLAYER_SPEED = 5
 RING_SPEED = 8
+CIRCLE_RADIUS = 60
+DOT_RADIUS = 6
+DOT_OFFSET = CIRCLE_RADIUS // 2  # Halfway between center and edge
 
 # Set up the game window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -63,12 +66,13 @@ def draw_rink(surface):
     pygame.draw.line(surface, RED_LINE, (GOAL_LINE_2_X, 0), (GOAL_LINE_2_X, HEIGHT), 3)
     
     # Draw face-off circles (larger circles with dots)
-    circle_radius = 60 # Increased from 15
-    dot_radius = 6     # Increased from 3
+    circle_radius = CIRCLE_RADIUS
+    dot_radius = DOT_RADIUS
     
     # Center face-off circle
     pygame.draw.circle(surface, BLUE_LINE, (WIDTH // 2, HEIGHT // 2), circle_radius, 2)
-    pygame.draw.circle(surface, BLUE_LINE, (WIDTH // 2, HEIGHT // 2), dot_radius)
+    pygame.draw.circle(surface, BLUE_LINE, (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2), dot_radius)  # Left dot
+    pygame.draw.circle(surface, BLUE_LINE, (WIDTH // 2 + DOT_OFFSET, HEIGHT // 2), dot_radius)  # Right dot
     
 
     # Face off circles
@@ -79,14 +83,35 @@ def draw_rink(surface):
 
     # Higher face-off circles
     pygame.draw.circle(surface, BLUE_LINE, (right_face_off, higher_face_off), circle_radius, 2)
-    pygame.draw.circle(surface, BLUE_LINE, (right_face_off, higher_face_off), dot_radius)
+    pygame.draw.circle(surface, BLUE_LINE, (right_face_off - DOT_OFFSET, higher_face_off), dot_radius)  # Left dot
+    pygame.draw.circle(surface, BLUE_LINE, (right_face_off + DOT_OFFSET, higher_face_off), dot_radius)  # Right dot
     pygame.draw.circle(surface, BLUE_LINE, (left_face_off, higher_face_off), circle_radius, 2)
-    pygame.draw.circle(surface, BLUE_LINE, (left_face_off, higher_face_off), dot_radius)
+    pygame.draw.circle(surface, BLUE_LINE, (left_face_off - DOT_OFFSET, higher_face_off), dot_radius)  # Left dot
+    pygame.draw.circle(surface, BLUE_LINE, (left_face_off + DOT_OFFSET, higher_face_off), dot_radius)  # Right dot
+    
+    # Add vertical lines through higher face-off circles
+    pygame.draw.line(surface, BLUE_LINE, 
+                    (right_face_off, higher_face_off - circle_radius),
+                    (right_face_off, higher_face_off + circle_radius), 2)
+    pygame.draw.line(surface, BLUE_LINE,
+                    (left_face_off, higher_face_off - circle_radius),
+                    (left_face_off, higher_face_off + circle_radius), 2)
+    
     # Lower face-off circles
     pygame.draw.circle(surface, BLUE_LINE, (right_face_off, lower_face_off), circle_radius, 2)
-    pygame.draw.circle(surface, BLUE_LINE, (right_face_off, lower_face_off), dot_radius)
+    pygame.draw.circle(surface, BLUE_LINE, (right_face_off - DOT_OFFSET, lower_face_off), dot_radius)  # Left dot
+    pygame.draw.circle(surface, BLUE_LINE, (right_face_off + DOT_OFFSET, lower_face_off), dot_radius)  # Right dot
     pygame.draw.circle(surface, BLUE_LINE, (left_face_off, lower_face_off), circle_radius, 2)
-    pygame.draw.circle(surface, BLUE_LINE, (left_face_off, lower_face_off), dot_radius)
+    pygame.draw.circle(surface, BLUE_LINE, (left_face_off - DOT_OFFSET, lower_face_off), dot_radius)  # Left dot
+    pygame.draw.circle(surface, BLUE_LINE, (left_face_off + DOT_OFFSET, lower_face_off), dot_radius)  # Right dot
+    
+    # Add vertical lines through lower face-off circles
+    pygame.draw.line(surface, BLUE_LINE,
+                    (right_face_off, lower_face_off - circle_radius),
+                    (right_face_off, lower_face_off + circle_radius), 2)
+    pygame.draw.line(surface, BLUE_LINE,
+                    (left_face_off, lower_face_off - circle_radius),
+                    (left_face_off, lower_face_off + circle_radius), 2)
 
 
     # Draw goal creases (proper semi-circles with specific radius)
@@ -244,10 +269,17 @@ while running:
 
     # Check for goals
     if ring.active:
-        if pygame.sprite.collide_rect(ring, goal1) or pygame.sprite.collide_rect(ring, goal2):
+        if pygame.sprite.collide_rect(ring, goal1):
             score += 1
             ring.active = False
-            ring.rect.center = (WIDTH // 2, HEIGHT // 2)
+            # Place ring on left team's center dot (they got scored on)
+            ring.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
+            ring.velocity = [0, 0]
+        elif pygame.sprite.collide_rect(ring, goal2):
+            score += 1
+            ring.active = False
+            # Place ring on right team's center dot (they got scored on)
+            ring.rect.center = (WIDTH // 2 + DOT_OFFSET, HEIGHT // 2)
             ring.velocity = [0, 0]
         # Then check for pickup if no goal was scored and cooldown is over
         elif pygame.sprite.collide_rect(player, ring) and ring.shoot_cooldown == 0:
