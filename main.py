@@ -175,6 +175,18 @@ class Player(pygame.sprite.Sprite):
         # Keep player on screen
         self.rect.clamp_ip(screen.get_rect())
 
+    def get_shoot_direction(self):
+        # Get mouse position
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        # Calculate direction vector from player to mouse
+        dx = mouse_x - self.rect.centerx
+        dy = mouse_y - self.rect.centery
+        # Normalize the vector
+        length = math.sqrt(dx * dx + dy * dy)
+        if length > 0:
+            return [dx / length, dy / length]
+        return [1, 0]  # Default to right if mouse is on player
+
 class Ring(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
@@ -243,10 +255,12 @@ while running:
             if event.key == pygame.K_SPACE and player.has_ring:
                 player.has_ring = False
                 ring.active = True
-                # Position ring at bottom right of player when shooting
-                ring.rect.bottomright = player.rect.bottomright
-                ring.velocity = [player.direction[0] * RING_SPEED, 
-                               player.direction[1] * RING_SPEED]
+                # Position ring at bottom right of player with offset
+                ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
+                # Get direction from player to mouse
+                direction = player.get_shoot_direction()
+                ring.velocity = [direction[0] * RING_SPEED, 
+                               direction[1] * RING_SPEED]
                 ring.shoot_cooldown = 30  # Set cooldown to 30 frames (0.5 seconds at 60 FPS)
 
     # Get keys
