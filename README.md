@@ -47,4 +47,3 @@ To create a standalone executable:
 
 ## Requests for More Features
 - Center lines for circles and free pass circles
-- Lynx logo as player

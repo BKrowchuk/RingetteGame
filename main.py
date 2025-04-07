@@ -195,8 +195,11 @@ goal2 = Goal(GOAL_LINE_2_X, HEIGHT // 2 - 50)  # Move goal2 to the right side of
 
 # Create sprite groups
 all_sprites = pygame.sprite.Group()
-all_sprites.add(player)
+# Add ring first so it's drawn underneath
 all_sprites.add(ring)
+# Then add player so it's drawn on top
+all_sprites.add(player)
+# Add goals last
 all_sprites.add(goal1)
 all_sprites.add(goal2)
 
@@ -214,7 +217,8 @@ while running:
             if event.key == pygame.K_SPACE and player.has_ring:
                 player.has_ring = False
                 ring.active = True
-                ring.rect.center = player.rect.center
+                # Position ring at bottom right of player when shooting
+                ring.rect.bottomright = player.rect.bottomright
                 ring.velocity = [player.direction[0] * RING_SPEED, 
                                player.direction[1] * RING_SPEED]
                 ring.shoot_cooldown = 30  # Set cooldown to 30 frames (0.5 seconds at 60 FPS)
@@ -226,7 +230,19 @@ while running:
     player.update(keys)
     ring.update()
 
-    # Check for goals first
+    # Check for ring pickup
+    if not ring.active and pygame.sprite.collide_rect(player, ring):
+        player.has_ring = True
+        # Position ring at bottom right of player with offset
+        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
+    elif ring.active and pygame.sprite.collide_rect(player, ring) and ring.shoot_cooldown == 0:
+        player.has_ring = True
+        ring.active = False
+        # Position ring at bottom right of player with offset
+        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
+        ring.velocity = [0, 0]
+
+    # Check for goals
     if ring.active:
         if pygame.sprite.collide_rect(ring, goal1) or pygame.sprite.collide_rect(ring, goal2):
             score += 1
@@ -237,12 +253,14 @@ while running:
         elif pygame.sprite.collide_rect(player, ring) and ring.shoot_cooldown == 0:
             player.has_ring = True
             ring.active = False
-            ring.rect.center = player.rect.center
+            # Position ring at bottom right of player with offset
+            ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
             ring.velocity = [0, 0]
     # Check for initial pickup when ring is not active
     elif not ring.active and pygame.sprite.collide_rect(player, ring):
         player.has_ring = True
-        ring.rect.center = player.rect.center
+        # Position ring at bottom right of player with offset
+        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
 
     # Draw
     draw_rink(screen)
