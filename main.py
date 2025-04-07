@@ -29,7 +29,7 @@ except Exception as e:
 WIDTH, HEIGHT = RINK_WIDTH, RINK_HEIGHT
 FPS = 60
 PLAYER_SPEED = 5
-RING_SPEED = 8
+RING_SPEED = 5  # Reduced from 8 to make the ring move slower
 CIRCLE_RADIUS = 60
 DOT_RADIUS = 6
 DOT_OFFSET = CIRCLE_RADIUS // 2  # Halfway between center and edge
@@ -263,12 +263,14 @@ while running:
             dy = ring.rect.centery - player.rect.centery
             distance = math.sqrt(dx * dx + dy * dy)
             
-            # Toggle pickup if within range and ring is not active
-            if distance <= PICKUP_RANGE and not ring.active:
+            # Toggle pickup if within range
+            if distance <= PICKUP_RANGE:
                 player.has_ring = not player.has_ring  # Toggle pickup state
                 if player.has_ring:
                     # Position ring at bottom right of player with offset
                     ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
+                    ring.active = False  # Stop the ring from moving
+                    ring.velocity = [0, 0]  # Reset velocity
 
     # Get keys
     keys = pygame.key.get_pressed()
