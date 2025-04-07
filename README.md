@@ -46,12 +46,8 @@ To create a standalone executable:
 - SPACE - Pass/Shoot 
 
 ## Requests for More Features
-- wasd movement
-- Shooting on an angle
 - AI players? 
    - collisions
-- Picking it up sometimes miss
-   - adding a key to stab the ring?
 - Add AI on own team
 - Add goalies
 - Add passing over blue lines
@@ -62,3 +58,5 @@ To create a standalone executable:
 - Add advantage and free pass plays when blocking players
 - Add pass instead of shot option
 - Add point and click instead of space?
+- Shooting on an angleV2
+   - click and drag?

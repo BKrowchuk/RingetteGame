@@ -33,6 +33,7 @@ RING_SPEED = 8
 CIRCLE_RADIUS = 60
 DOT_RADIUS = 6
 DOT_OFFSET = CIRCLE_RADIUS // 2  # Halfway between center and edge
+PICKUP_RANGE = 80  # Range within which the player can pick up the ring
 
 # Set up the game window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -198,16 +199,11 @@ class Ring(pygame.sprite.Sprite):
         self.velocity = [0, 0]
         self.active = False
         self.rect.center = (WIDTH // 2, HEIGHT // 2)
-        self.shoot_cooldown = 0  # Add cooldown timer
 
     def update(self):
         if self.active:
             self.rect.x += self.velocity[0]
             self.rect.y += self.velocity[1]
-            
-            # Update cooldown
-            if self.shoot_cooldown > 0:
-                self.shoot_cooldown -= 1
 
             # Bounce off walls
             if self.rect.left < 0 or self.rect.right > WIDTH:
@@ -261,26 +257,30 @@ while running:
                 direction = player.get_shoot_direction()
                 ring.velocity = [direction[0] * RING_SPEED, 
                                direction[1] * RING_SPEED]
-                ring.shoot_cooldown = 30  # Set cooldown to 30 frames (0.5 seconds at 60 FPS)
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
+            # Calculate distance between player and ring
+            dx = ring.rect.centerx - player.rect.centerx
+            dy = ring.rect.centery - player.rect.centery
+            distance = math.sqrt(dx * dx + dy * dy)
+            
+            # Toggle pickup if within range and ring is not active
+            if distance <= PICKUP_RANGE and not ring.active:
+                player.has_ring = not player.has_ring  # Toggle pickup state
+                if player.has_ring:
+                    # Position ring at bottom right of player with offset
+                    ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
 
     # Get keys
     keys = pygame.key.get_pressed()
 
     # Update
     player.update(keys)
+    
+    # Update ring position if player has it
+    if player.has_ring and not ring.active:
+        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
+    
     ring.update()
-
-    # Check for ring pickup
-    if not ring.active and pygame.sprite.collide_rect(player, ring):
-        player.has_ring = True
-        # Position ring at bottom right of player with offset
-        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
-    elif ring.active and pygame.sprite.collide_rect(player, ring) and ring.shoot_cooldown == 0:
-        player.has_ring = True
-        ring.active = False
-        # Position ring at bottom right of player with offset
-        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
-        ring.velocity = [0, 0]
 
     # Check for goals
     if ring.active:
@@ -296,18 +296,6 @@ while running:
             # Place ring on right team's center dot (they got scored on)
             ring.rect.center = (WIDTH // 2 + DOT_OFFSET, HEIGHT // 2)
             ring.velocity = [0, 0]
-        # Then check for pickup if no goal was scored and cooldown is over
-        elif pygame.sprite.collide_rect(player, ring) and ring.shoot_cooldown == 0:
-            player.has_ring = True
-            ring.active = False
-            # Position ring at bottom right of player with offset
-            ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
-            ring.velocity = [0, 0]
-    # Check for initial pickup when ring is not active
-    elif not ring.active and pygame.sprite.collide_rect(player, ring):
-        player.has_ring = True
-        # Position ring at bottom right of player with offset
-        ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
 
     # Draw
     draw_rink(screen)
