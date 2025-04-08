@@ -236,7 +236,7 @@ class Ring(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.velocity = [0, 0]
         self.active = False
-        self.decay_factor = 0.999  # General decay factor for all ring movements
+        self.decay_factor = 0.99  # General decay factor for all ring movements
         # Start on the left center dot
         self.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
 
@@ -318,8 +318,8 @@ ring = Ring()
 goal1 = Goal(GOAL_LINE_1_X - 20, HEIGHT // 2 - 50)  # Move goal1 to the left side of its goal line
 goal2 = Goal(GOAL_LINE_2_X, HEIGHT // 2 - 50)  # Move goal2 to the right side of its goal line
 # Create goalies
-goalie1 = Goalie(GOAL_LINE_1_X - 10, HEIGHT // 2 - 30)  # Left goalie
-goalie2 = Goalie(GOAL_LINE_2_X - 10, HEIGHT // 2 - 30)  # Right goalie
+goalie1 = Goalie(GOAL_LINE_1_X + 30, HEIGHT // 2 - 30)  # Left goalie, moved 30px in front of goal line
+goalie2 = Goalie(GOAL_LINE_2_X - 30, HEIGHT // 2 - 30)  # Right goalie, moved 30px in front of goal line
 
 # Create sprite groups
 all_sprites = pygame.sprite.Group()
@@ -357,7 +357,7 @@ while running:
                 direction = player.get_shoot_direction()
                 ring.velocity = [direction[0] * RING_SPEED, 
                                direction[1] * RING_SPEED]
-                ring.decay_factor = 0.999  # Reset decay factor for player shots
+                ring.decay_factor = 0.99  # Reset decay factor for player shots
                 shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when shooting
             elif event.key == pygame.K_ESCAPE:  # Toggle instructions with Escape key
                 show_instructions = not show_instructions
@@ -432,7 +432,7 @@ while running:
     if ring.active:
         # Check for goalie blocks first
         if pygame.sprite.collide_rect(ring, goalie1) and goalie1.can_catch():
-            if random.random() < 0.9:  # 90% chance to catch
+            if random.random() < 0.7:  # 70% chance to catch (30% chance to bounce)
                 # Goalie catches the ring
                 ring.active = False
                 goalie1.has_ring = True
@@ -447,10 +447,10 @@ while running:
                 # Add some randomness to the bounce
                 ring.velocity[0] += random.uniform(-1, 1)
                 ring.velocity[1] += random.uniform(-1, 1)
-                ring.decay_factor = 0.985  # Set decay factor for goalie saves
+                ring.decay_factor = 0.98  # Set decay factor for goalie saves
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
         elif pygame.sprite.collide_rect(ring, goalie2) and goalie2.can_catch():
-            if random.random() < 0.9:  # 90% chance to catch
+            if random.random() < 0.7:  # 70% chance to catch (30% chance to bounce)
                 # Goalie catches the ring
                 ring.active = False
                 goalie2.has_ring = True
@@ -465,7 +465,7 @@ while running:
                 # Add some randomness to the bounce
                 ring.velocity[0] += random.uniform(-1, 1)
                 ring.velocity[1] += random.uniform(-1, 1)
-                ring.decay_factor = 0.985  # Set decay factor for goalie saves
+                ring.decay_factor = 0.98  # Set decay factor for goalie saves
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
         elif pygame.sprite.collide_rect(ring, goal1):
             score += 1
