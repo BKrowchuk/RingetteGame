@@ -52,7 +52,6 @@ To create a standalone executable:
 - Add goalies
 - Add passing over blue lines
    - Add free pass plays
-- Add 30 second shot clock
 - Add 5 second goal count
 - Add crease violation
 - Add advantage and free pass plays when blocking players
@@ -60,3 +59,5 @@ To create a standalone executable:
 - Add point and click instead of space?
 - Shooting on an angleV2
    - click and drag?
+- Add 30 second shot clockV2
+   - make it actually work

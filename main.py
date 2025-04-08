@@ -34,6 +34,7 @@ CIRCLE_RADIUS = 60
 DOT_RADIUS = 6
 DOT_OFFSET = CIRCLE_RADIUS // 2  # Halfway between center and edge
 PICKUP_RANGE = 70  # Range within which the player can pick up the ring
+SHOT_CLOCK_DURATION = 30  # 30 seconds shot clock
 
 # Set up the game window
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
@@ -241,6 +242,8 @@ all_sprites.add(goal2)
 # Game variables
 score = 0
 show_instructions = True  # New variable to track if instructions should be shown
+shot_clock = SHOT_CLOCK_DURATION  # Initialize shot clock
+last_time = pygame.time.get_ticks()  # Track time for shot clock
 
 # Game loop
 running = True
@@ -259,6 +262,7 @@ while running:
                 direction = player.get_shoot_direction()
                 ring.velocity = [direction[0] * RING_SPEED, 
                                direction[1] * RING_SPEED]
+                shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when shooting
             elif event.key == pygame.K_ESCAPE:  # Toggle instructions with Escape key
                 show_instructions = not show_instructions
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Left mouse button
@@ -278,6 +282,21 @@ while running:
                         ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
                         ring.active = False  # Stop the ring from moving
                         ring.velocity = [0, 0]  # Reset velocity
+                        shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when picking up
+
+    # Update shot clock
+    current_time = pygame.time.get_ticks()
+    if current_time - last_time >= 1000:  # Every second
+        if player.has_ring and not show_instructions:  # Only count down when holding ring and not in instructions
+            shot_clock -= 1
+            if shot_clock <= 0:
+                # Time's up! Reset ring to center
+                player.has_ring = False
+                ring.active = False
+                ring.velocity = [0, 0]
+                ring.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)  # Reset to left center dot
+                shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock
+        last_time = current_time
 
     # Get keys
     keys = pygame.key.get_pressed()
@@ -299,12 +318,14 @@ while running:
             # Place ring on left team's center dot (they got scored on)
             ring.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
             ring.velocity = [0, 0]
+            shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on goal
         elif pygame.sprite.collide_rect(ring, goal2):
             score += 1
             ring.active = False
             # Place ring on right team's center dot (they got scored on)
             ring.rect.center = (WIDTH // 2 + DOT_OFFSET, HEIGHT // 2)
             ring.velocity = [0, 0]
+            shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on goal
 
     # Draw
     draw_rink(screen)
@@ -313,6 +334,17 @@ while running:
     # Draw score
     score_text = score_font.render(f"Score: {score}", True, RINK_BLUE)
     screen.blit(score_text, (WIDTH - 160, 20))
+
+    # Draw shot clock if player has ring
+    if player.has_ring and not show_instructions:
+        # Create a background for the shot clock
+        clock_bg = pygame.Surface((100, 40), pygame.SRCALPHA)
+        clock_bg.fill((0, 0, 0, 128))  # Semi-transparent black
+        screen.blit(clock_bg, (20, 20))
+        
+        # Draw the shot clock text
+        clock_text = score_font.render(f"{shot_clock}s", True, (255, 255, 255))
+        screen.blit(clock_text, (30, 25))
 
     # Draw instructions popup if needed
     if show_instructions:
@@ -332,6 +364,7 @@ while running:
             "     shooting direction",
             "Get close to ring to pick it up",
             "Score by shooting into goals",
+            "30 second shot clock!",
             "",
             "Click anywhere to start!",
             "Press ESC to show/hide instructions"
