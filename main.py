@@ -198,7 +198,8 @@ class Ring(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.velocity = [0, 0]
         self.active = False
-        self.rect.center = (WIDTH // 2, HEIGHT // 2)
+        # Start on the left center dot
+        self.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
 
     def update(self):
         if self.active:
@@ -221,7 +222,7 @@ class Goal(pygame.sprite.Sprite):
         self.rect.y = y
 
 # Create game objects
-player = Player(WIDTH // 2, HEIGHT // 2)
+player = Player(WIDTH // 2 - 100, HEIGHT // 2)  # Start on left blue line
 ring = Ring()
 # Create two goals
 goal1 = Goal(GOAL_LINE_1_X - 20, HEIGHT // 2 - 50)  # Move goal1 to the left side of its goal line
