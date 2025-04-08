@@ -236,11 +236,22 @@ class Ring(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.velocity = [0, 0]
         self.active = False
+        self.thrown_by_goalie = False  # Track if ring was thrown by goalie
+        self.decay_factor = 0.99  # Decay factor for velocity
         # Start on the left center dot
         self.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
 
     def update(self):
         if self.active:
+            # Apply velocity decay if thrown by goalie
+            if self.thrown_by_goalie:
+                self.velocity[0] *= self.decay_factor
+                self.velocity[1] *= self.decay_factor
+                # Stop very slow movement to prevent endless sliding
+                if abs(self.velocity[0]) < 0.1 and abs(self.velocity[1]) < 0.1:
+                    self.velocity = [0, 0]
+                    self.thrown_by_goalie = False
+
             self.rect.x += self.velocity[0]
             self.rect.y += self.velocity[1]
 
@@ -270,16 +281,38 @@ class Goalie(pygame.sprite.Sprite):
         self.direction = 1  # 1 for down, -1 for up
         self.goal_top = HEIGHT // 2 - 50  # Top of the goal
         self.goal_bottom = HEIGHT // 2 + 50  # Bottom of the goal
+        self.has_ring = False  # Track if goalie is holding the ring
+        self.hold_time = 0  # Track how long goalie has held the ring
+        self.throw_direction = [0, 0]  # Direction to throw the ring
+        self.throw_cooldown = 0  # Cooldown after throwing before can catch again
 
     def update(self):
-        # Move up and down within goal area
-        self.rect.y += self.speed * self.direction
-        
-        # Change direction at goal boundaries
-        if self.rect.top <= self.goal_top:
-            self.direction = 1
-        elif self.rect.bottom >= self.goal_bottom:
-            self.direction = -1
+        # Only move if not holding the ring
+        if not self.has_ring:
+            # Move up and down within goal area
+            self.rect.y += self.speed * self.direction
+            
+            # Change direction at goal boundaries
+            if self.rect.top <= self.goal_top:
+                self.direction = 1
+            elif self.rect.bottom >= self.goal_bottom:
+                self.direction = -1
+
+            # Update throw cooldown
+            if self.throw_cooldown > 0:
+                self.throw_cooldown -= 1
+
+        # Update ring position if goalie has it
+        if self.has_ring:
+            self.hold_time += 1
+            if self.hold_time >= 180:  # 3 seconds at 60 FPS
+                self.has_ring = False
+                self.throw_cooldown = 120  # 2 second cooldown (60 FPS * 2)
+                return self.throw_direction  # Return direction to throw the ring
+        return None
+
+    def can_catch(self):
+        return not self.has_ring and self.throw_cooldown == 0
 
 # Create game objects
 player = Player(WIDTH // 2 - 100, HEIGHT // 2)  # Start on left blue line
@@ -369,8 +402,25 @@ while running:
 
     # Update
     player.update(keys)
-    goalie1.update()  # Update goalie movement
-    goalie2.update()
+    
+    # Update goalies and check for throws
+    throw_direction = goalie1.update()
+    if throw_direction:
+        ring.active = True
+        ring.rect.center = goalie1.rect.center
+        ring.velocity = [throw_direction[0] * RING_SPEED * 2, throw_direction[1] * RING_SPEED / 2]  # Double speed for goalie throws
+        ring.thrown_by_goalie = True  # Mark that ring was thrown by goalie
+        goalie1.hold_time = 0
+        shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on throw
+    
+    throw_direction = goalie2.update()
+    if throw_direction:
+        ring.active = True
+        ring.rect.center = goalie2.rect.center
+        ring.velocity = [throw_direction[0] * RING_SPEED * 2, throw_direction[1] * RING_SPEED * 2]  # Double speed for goalie throws
+        ring.thrown_by_goalie = True  # Mark that ring was thrown by goalie
+        goalie2.hold_time = 0
+        shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on throw
     
     # Update ring position if player has it
     if player.has_ring and not ring.active:
@@ -381,12 +431,39 @@ while running:
     # Check for goals and goalie blocks
     if ring.active:
         # Check for goalie blocks first
-        if pygame.sprite.collide_rect(ring, goalie1) or pygame.sprite.collide_rect(ring, goalie2):
-            ring.velocity[0] *= -1  # Reverse x velocity
-            ring.velocity[1] *= -1  # Reverse y velocity
-            # Add some randomness to the bounce
-            ring.velocity[0] += random.uniform(-1, 1)
-            ring.velocity[1] += random.uniform(-1, 1)
+        if pygame.sprite.collide_rect(ring, goalie1) and goalie1.can_catch():
+            if random.random() < 0.9:  # 90% chance to catch
+                # Goalie catches the ring
+                ring.active = False
+                goalie1.has_ring = True
+                goalie1.hold_time = 0  # Reset hold time
+                # Calculate throw direction (away from net)
+                goalie1.throw_direction = [1, random.uniform(-1, 1)]  # Left goalie throws right (away from net)
+                ring.rect.center = goalie1.rect.center  # Position ring on goalie
+            else:
+                # Normal bounce
+                ring.velocity[0] *= -1  # Reverse x velocity
+                ring.velocity[1] *= -1  # Reverse y velocity
+                # Add some randomness to the bounce
+                ring.velocity[0] += random.uniform(-1, 1)
+                ring.velocity[1] += random.uniform(-1, 1)
+            shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
+        elif pygame.sprite.collide_rect(ring, goalie2) and goalie2.can_catch():
+            if random.random() < 0.9:  # 90% chance to catch
+                # Goalie catches the ring
+                ring.active = False
+                goalie2.has_ring = True
+                goalie2.hold_time = 0  # Reset hold time
+                # Calculate throw direction (away from net)
+                goalie2.throw_direction = [-1, random.uniform(-1, 1)]  # Right goalie throws left (away from net)
+                ring.rect.center = goalie2.rect.center  # Position ring on goalie
+            else:
+                # Normal bounce
+                ring.velocity[0] *= -1  # Reverse x velocity
+                ring.velocity[1] *= -1  # Reverse y velocity
+                # Add some randomness to the bounce
+                ring.velocity[0] += random.uniform(-1, 1)
+                ring.velocity[1] += random.uniform(-1, 1)
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
         elif pygame.sprite.collide_rect(ring, goal1):
             score += 1
