@@ -180,14 +180,16 @@ class Player(pygame.sprite.Sprite):
     def get_shoot_direction(self):
         # Get mouse position
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        # Calculate direction vector from player to mouse
-        dx = mouse_x - self.rect.centerx
-        dy = mouse_y - self.rect.centery
+        # Calculate direction vector from ring to mouse (using ring's position)
+        ring_x = self.rect.right + 10  # Ring's x position (offset from player)
+        ring_y = self.rect.bottom      # Ring's y position
+        dx = mouse_x - ring_x
+        dy = mouse_y - ring_y
         # Normalize the vector
         length = math.sqrt(dx * dx + dy * dy)
         if length > 0:
             return [dx / length, dy / length]
-        return [1, 0]  # Default to right if mouse is on player
+        return [1, 0]  # Default to right if mouse is on ring
 
 class Ring(pygame.sprite.Sprite):
     def __init__(self):
