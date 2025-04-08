@@ -237,7 +237,7 @@ class Ring(pygame.sprite.Sprite):
         self.velocity = [0, 0]
         self.active = False
         self.thrown_by_goalie = False  # Track if ring was thrown by goalie
-        self.decay_factor = 0.99  # Decay factor for velocity
+        self.decay_factor = 0.98  # Decay factor for velocity
         # Start on the left center dot
         self.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
 
@@ -360,6 +360,7 @@ while running:
                 direction = player.get_shoot_direction()
                 ring.velocity = [direction[0] * RING_SPEED, 
                                direction[1] * RING_SPEED]
+                ring.thrown_by_goalie = False  # Ensure decay is not applied to player shots
                 shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when shooting
             elif event.key == pygame.K_ESCAPE:  # Toggle instructions with Escape key
                 show_instructions = not show_instructions
@@ -407,8 +408,9 @@ while running:
     throw_direction = goalie1.update()
     if throw_direction:
         ring.active = True
-        ring.rect.center = goalie1.rect.center
-        ring.velocity = [throw_direction[0] * RING_SPEED * 2, throw_direction[1] * RING_SPEED / 2]  # Double speed for goalie throws
+        # Position ring slightly in front of goalie (to the right)
+        ring.rect.center = (goalie1.rect.centerx + 20, goalie1.rect.centery)
+        ring.velocity = [throw_direction[0] * RING_SPEED * 0.5, throw_direction[1] * RING_SPEED * 0.5]  # Half speed for goalie throws
         ring.thrown_by_goalie = True  # Mark that ring was thrown by goalie
         goalie1.hold_time = 0
         shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on throw
@@ -416,8 +418,9 @@ while running:
     throw_direction = goalie2.update()
     if throw_direction:
         ring.active = True
-        ring.rect.center = goalie2.rect.center
-        ring.velocity = [throw_direction[0] * RING_SPEED * 2, throw_direction[1] * RING_SPEED * 2]  # Double speed for goalie throws
+        # Position ring slightly in front of goalie (to the left)
+        ring.rect.center = (goalie2.rect.centerx - 20, goalie2.rect.centery)
+        ring.velocity = [throw_direction[0] * RING_SPEED * 0.5, throw_direction[1] * RING_SPEED * 0.5]  # Half speed for goalie throws
         ring.thrown_by_goalie = True  # Mark that ring was thrown by goalie
         goalie2.hold_time = 0
         shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on throw
