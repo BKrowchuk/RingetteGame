@@ -138,6 +138,44 @@ def draw_rink(surface):
                     (GOAL_LINE_2_X - free_play_distance, 0), 
                     (GOAL_LINE_2_X - free_play_distance, HEIGHT), 3)
 
+# Load sprites
+def create_ring_sprite():
+    surface = pygame.Surface((20, 20), pygame.SRCALPHA)
+    # Draw a blue ring
+    pygame.draw.circle(surface, RING_COLOR, (10, 10), 10)
+    pygame.draw.circle(surface, ICE_WHITE, (10, 10), 5)
+    return surface
+
+def create_goalie_sprite():
+    surface = pygame.Surface((20, 40), pygame.SRCALPHA)
+    
+    # Body (red jersey)
+    pygame.draw.rect(surface, (220, 20, 20), (5, 10, 10, 20))  # Torso
+    
+    # Head
+    pygame.draw.circle(surface, (255, 218, 185), (10, 7), 5)  # Flesh color
+    
+    # Arms (holding stick)
+    pygame.draw.line(surface, (220, 20, 20), (5, 15), (3, 25), 3)   # Left arm
+    pygame.draw.line(surface, (220, 20, 20), (15, 15), (17, 25), 3) # Right arm
+    
+    # Hands (holding stick)
+    pygame.draw.circle(surface, (255, 218, 185), (3, 25), 2)  # Left hand
+    pygame.draw.circle(surface, (255, 218, 185), (17, 25), 2)  # Right hand
+    
+    # Legs (slightly spread)
+    pygame.draw.line(surface, (0, 0, 0), (7, 30), (7, 38), 3)  # Left leg
+    pygame.draw.line(surface, (0, 0, 0), (13, 30), (13, 38), 3)  # Right leg
+    
+    # Goalie stick (held horizontally)
+    pygame.draw.line(surface, (139, 69, 19), (3, 25), (17, 25), 3)  # Brown stick
+    
+    return surface
+
+# Load all sprites
+ring_sprite = create_ring_sprite()
+goalie_sprite = create_goalie_sprite()
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, x, y):
         super().__init__()
@@ -194,10 +232,7 @@ class Player(pygame.sprite.Sprite):
 class Ring(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((20, 20), pygame.SRCALPHA)
-        # Draw a blue ring
-        pygame.draw.circle(self.image, RING_COLOR, (10, 10), 10)
-        pygame.draw.circle(self.image, ICE_WHITE, (10, 10), 5)
+        self.image = ring_sprite
         self.rect = self.image.get_rect()
         self.velocity = [0, 0]
         self.active = False
@@ -224,12 +259,37 @@ class Goal(pygame.sprite.Sprite):
         self.rect.x = x
         self.rect.y = y
 
+class Goalie(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = goalie_sprite
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.speed = 1  # Reduced from 4 to make goalie movement slower
+        self.direction = 1  # 1 for down, -1 for up
+        self.goal_top = HEIGHT // 2 - 50  # Top of the goal
+        self.goal_bottom = HEIGHT // 2 + 50  # Bottom of the goal
+
+    def update(self):
+        # Move up and down within goal area
+        self.rect.y += self.speed * self.direction
+        
+        # Change direction at goal boundaries
+        if self.rect.top <= self.goal_top:
+            self.direction = 1
+        elif self.rect.bottom >= self.goal_bottom:
+            self.direction = -1
+
 # Create game objects
 player = Player(WIDTH // 2 - 100, HEIGHT // 2)  # Start on left blue line
 ring = Ring()
 # Create two goals
 goal1 = Goal(GOAL_LINE_1_X - 20, HEIGHT // 2 - 50)  # Move goal1 to the left side of its goal line
 goal2 = Goal(GOAL_LINE_2_X, HEIGHT // 2 - 50)  # Move goal2 to the right side of its goal line
+# Create goalies
+goalie1 = Goalie(GOAL_LINE_1_X - 10, HEIGHT // 2 - 30)  # Left goalie
+goalie2 = Goalie(GOAL_LINE_2_X - 10, HEIGHT // 2 - 30)  # Right goalie
 
 # Create sprite groups
 all_sprites = pygame.sprite.Group()
@@ -237,9 +297,11 @@ all_sprites = pygame.sprite.Group()
 all_sprites.add(ring)
 # Then add player so it's drawn on top
 all_sprites.add(player)
-# Add goals last
+# Add goals and goalies
 all_sprites.add(goal1)
 all_sprites.add(goal2)
+all_sprites.add(goalie1)
+all_sprites.add(goalie2)
 
 # Game variables
 score = 0
@@ -305,6 +367,8 @@ while running:
 
     # Update
     player.update(keys)
+    goalie1.update()  # Update goalie movement
+    goalie2.update()
     
     # Update ring position if player has it
     if player.has_ring and not ring.active:
@@ -312,9 +376,16 @@ while running:
     
     ring.update()
 
-    # Check for goals
+    # Check for goals and goalie blocks
     if ring.active:
-        if pygame.sprite.collide_rect(ring, goal1):
+        # Check for goalie blocks first
+        if pygame.sprite.collide_rect(ring, goalie1) or pygame.sprite.collide_rect(ring, goalie2):
+            ring.velocity[0] *= -1  # Reverse x velocity
+            ring.velocity[1] *= -1  # Reverse y velocity
+            # Add some randomness to the bounce
+            ring.velocity[0] += random.uniform(-1, 1)
+            ring.velocity[1] += random.uniform(-1, 1)
+        elif pygame.sprite.collide_rect(ring, goal1):
             score += 1
             ring.active = False
             # Place ring on left team's center dot (they got scored on)
