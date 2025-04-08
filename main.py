@@ -308,6 +308,7 @@ score = 0
 show_instructions = True  # New variable to track if instructions should be shown
 shot_clock = SHOT_CLOCK_DURATION  # Initialize shot clock
 last_time = pygame.time.get_ticks()  # Track time for shot clock
+ring_picked_up_since_goal = False  # Track if ring has been picked up since last goal
 
 # Game loop
 running = True
@@ -346,12 +347,12 @@ while running:
                         ring.rect.bottomright = (player.rect.right + 10, player.rect.bottom)
                         ring.active = False  # Stop the ring from moving
                         ring.velocity = [0, 0]  # Reset velocity
-                        shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when picking up
+                        ring_picked_up_since_goal = True  # Mark that ring has been picked up
 
     # Update shot clock
     current_time = pygame.time.get_ticks()
     if current_time - last_time >= 1000:  # Every second
-        if player.has_ring and not show_instructions:  # Only count down when holding ring and not in instructions
+        if not show_instructions and ring_picked_up_since_goal:  # Only count down after first pickup
             shot_clock -= 1
             if shot_clock <= 0:
                 # Time's up! Reset ring to center
@@ -360,6 +361,7 @@ while running:
                 ring.velocity = [0, 0]
                 ring.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)  # Reset to left center dot
                 shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock
+                ring_picked_up_since_goal = False  # Reset pickup flag
         last_time = current_time
 
     # Get keys
@@ -385,6 +387,7 @@ while running:
             # Add some randomness to the bounce
             ring.velocity[0] += random.uniform(-1, 1)
             ring.velocity[1] += random.uniform(-1, 1)
+            shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
         elif pygame.sprite.collide_rect(ring, goal1):
             score += 1
             ring.active = False
@@ -392,6 +395,7 @@ while running:
             ring.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
             ring.velocity = [0, 0]
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on goal
+            ring_picked_up_since_goal = False  # Reset pickup flag after goal
         elif pygame.sprite.collide_rect(ring, goal2):
             score += 1
             ring.active = False
@@ -399,6 +403,7 @@ while running:
             ring.rect.center = (WIDTH // 2 + DOT_OFFSET, HEIGHT // 2)
             ring.velocity = [0, 0]
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on goal
+            ring_picked_up_since_goal = False  # Reset pickup flag after goal
 
     # Draw
     draw_rink(screen)
@@ -408,8 +413,8 @@ while running:
     score_text = score_font.render(f"Score: {score}", True, RINK_BLUE)
     screen.blit(score_text, (WIDTH - 160, 20))
 
-    # Draw shot clock if player has ring
-    if player.has_ring and not show_instructions:
+    # Draw shot clock (always visible when not in instructions)
+    if not show_instructions:
         # Create a background for the shot clock
         clock_bg = pygame.Surface((100, 40), pygame.SRCALPHA)
         clock_bg.fill((0, 0, 0, 128))  # Semi-transparent black
