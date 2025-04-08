@@ -236,21 +236,18 @@ class Ring(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.velocity = [0, 0]
         self.active = False
-        self.thrown_by_goalie = False  # Track if ring was thrown by goalie
-        self.decay_factor = 0.98  # Decay factor for velocity
+        self.decay_factor = 0.999  # General decay factor for all ring movements
         # Start on the left center dot
         self.rect.center = (WIDTH // 2 - DOT_OFFSET, HEIGHT // 2)
 
     def update(self):
         if self.active:
-            # Apply velocity decay if thrown by goalie
-            if self.thrown_by_goalie:
-                self.velocity[0] *= self.decay_factor
-                self.velocity[1] *= self.decay_factor
-                # Stop very slow movement to prevent endless sliding
-                if abs(self.velocity[0]) < 0.1 and abs(self.velocity[1]) < 0.1:
-                    self.velocity = [0, 0]
-                    self.thrown_by_goalie = False
+            # Apply velocity decay to all active ring movements
+            self.velocity[0] *= self.decay_factor
+            self.velocity[1] *= self.decay_factor
+            # Stop very slow movement to prevent endless sliding
+            if abs(self.velocity[0]) < 0.1 and abs(self.velocity[1]) < 0.1:
+                self.velocity = [0, 0]
 
             self.rect.x += self.velocity[0]
             self.rect.y += self.velocity[1]
@@ -360,7 +357,7 @@ while running:
                 direction = player.get_shoot_direction()
                 ring.velocity = [direction[0] * RING_SPEED, 
                                direction[1] * RING_SPEED]
-                ring.thrown_by_goalie = False  # Ensure decay is not applied to player shots
+                ring.decay_factor = 0.999  # Reset decay factor for player shots
                 shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when shooting
             elif event.key == pygame.K_ESCAPE:  # Toggle instructions with Escape key
                 show_instructions = not show_instructions
@@ -411,7 +408,7 @@ while running:
         # Position ring slightly in front of goalie (to the right)
         ring.rect.center = (goalie1.rect.centerx + 20, goalie1.rect.centery)
         ring.velocity = [throw_direction[0] * RING_SPEED * 0.5, throw_direction[1] * RING_SPEED * 0.5]  # Half speed for goalie throws
-        ring.thrown_by_goalie = True  # Mark that ring was thrown by goalie
+        ring.decay_factor = 0.98  # Faster decay for goalie throws
         goalie1.hold_time = 0
         shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on throw
     
@@ -421,7 +418,7 @@ while running:
         # Position ring slightly in front of goalie (to the left)
         ring.rect.center = (goalie2.rect.centerx - 20, goalie2.rect.centery)
         ring.velocity = [throw_direction[0] * RING_SPEED * 0.5, throw_direction[1] * RING_SPEED * 0.5]  # Half speed for goalie throws
-        ring.thrown_by_goalie = True  # Mark that ring was thrown by goalie
+        ring.decay_factor = 0.98  # Faster decay for goalie throws
         goalie2.hold_time = 0
         shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock on throw
     
@@ -450,6 +447,7 @@ while running:
                 # Add some randomness to the bounce
                 ring.velocity[0] += random.uniform(-1, 1)
                 ring.velocity[1] += random.uniform(-1, 1)
+                ring.decay_factor = 0.985  # Set decay factor for goalie saves
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
         elif pygame.sprite.collide_rect(ring, goalie2) and goalie2.can_catch():
             if random.random() < 0.9:  # 90% chance to catch
@@ -467,6 +465,7 @@ while running:
                 # Add some randomness to the bounce
                 ring.velocity[0] += random.uniform(-1, 1)
                 ring.velocity[1] += random.uniform(-1, 1)
+                ring.decay_factor = 0.985  # Set decay factor for goalie saves
             shot_clock = SHOT_CLOCK_DURATION  # Reset shot clock when ring hits goalie
         elif pygame.sprite.collide_rect(ring, goal1):
             score += 1
