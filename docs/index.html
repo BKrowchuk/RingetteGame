@@ -3,57 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ringette Game</title>
+    <title>Ringette Game - Play Now!</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a237e, #0d47a1);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
             text-align: center;
+            padding: 2rem;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            max-width: 800px;
+            margin: 2rem;
         }
-        .download-button {
+
+        h1 {
+            color: #ffd700;
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .download-btn {
             display: inline-block;
-            padding: 15px 30px;
-            background-color: #007bff;
-            color: white;
+            padding: 1rem 2rem;
+            background-color: #ffd700;
+            color: #1a237e;
             text-decoration: none;
-            border-radius: 5px;
-            margin: 20px 0;
-            font-size: 18px;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: none;
+            cursor: pointer;
         }
-        .download-button:hover {
-            background-color: #0056b3;
+
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
         }
-        .screenshot {
-            max-width: 100%;
-            margin: 20px 0;
-            border-radius: 5px;
+
+        .game-info {
+            margin: 2rem 0;
+            line-height: 1.6;
+        }
+
+        .controls {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+        }
+
+        .controls h2 {
+            color: #ffd700;
+            margin-top: 0;
+        }
+
+        .controls ul {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+        }
+
+        .controls li {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .controls li:before {
+            content: "•";
+            color: #ffd700;
+            position: absolute;
+            left: 0;
+        }
+
+        footer {
+            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Ringette Game</h1>
-    <p>A simple 2D Ringette game where players can pass and shoot the ring to score goals.</p>
+    <div class="container">
+        <h1>Ringette Game</h1>
+        <p class="game-info">Experience the excitement of ringette in this fast-paced game! Control your player, pick up the ring, and score goals while avoiding the goalie.</p>
+        
+        <a href="RingetteGame.exe" class="download-btn">Download Game</a>
+        
+        <div class="controls">
+            <h2>How to Play</h2>
+            <ul>
+                <li>Use ARROW KEYS or WASD to move your player</li>
+                <li>LEFT CLICK near the ring to pick it up</li>
+                <li>LEFT CLICK while holding to drop the ring</li>
+                <li>SPACE to shoot the ring</li>
+                <li>Mouse position determines shooting direction</li>
+                <li>Score by shooting into the goals</li>
+                <li>Watch out for the 30-second shot clock!</li>
+            </ul>
+        </div>
+    </div>
     
-    <h2>How to Play</h2>
-    <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
-        <li>Use arrow keys or WASD to move</li>
-        <li>Left click near ring to pick it up</li>
-        <li>Left click while holding to drop</li>
-        <li>Space to shoot ring</li>
-        <li>Aim with mouse position</li>
-        <li>30 second shot clock!</li>
-    </ul>
-
-    <h2>Download</h2>
-    <a href="RingetteGame.exe" class="download-button">Download Game</a>
-
-    <h2>System Requirements</h2>
-    <ul style="text-align: left; max-width: 600px; margin: 0 auto;">
-        <li>Windows 10 or later</li>
-        <li>DirectX 9.0 or later</li>
-        <li>50MB free disk space</li>
-    </ul>
+    <footer>
+        <p>© 2024 Ringette Game. All rights reserved.</p>
+    </footer>
 </body>
 </html> 
