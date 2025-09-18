@@ -91,27 +91,47 @@
         pointer-events: auto;
       }
 
-      .instructions-box {
-        background: #000;
-        border: 2px solid #fff;
-        border-radius: 10px;
-        padding: 30px;
-        max-width: 90%;
-        max-height: 90%;
-        overflow-y: auto;
-      }
+        .instructions-box {
+          background: #000;
+          border: 2px solid #fff;
+          border-radius: 10px;
+          padding: 20px;
+          max-width: 80%;
+          max-height: 80%;
+          overflow-y: auto;
+          position: relative;
+        }
 
-      .instructions-box h2 {
-        margin-bottom: 20px;
-        color: #fff;
-        text-align: center;
-      }
+        .close-instructions {
+          position: absolute;
+          top: 10px;
+          right: 15px;
+          background: none;
+          border: none;
+          color: #fff;
+          font-size: 24px;
+          cursor: pointer;
+          padding: 5px;
+          pointer-events: auto;
+        }
 
-      .instructions-box p {
-        margin-bottom: 10px;
-        color: #fff;
-        line-height: 1.5;
-      }
+        .close-instructions:hover {
+          color: #ffd700;
+        }
+
+        .instructions-box h2 {
+          margin-bottom: 15px;
+          color: #fff;
+          text-align: center;
+          font-size: 20px;
+        }
+
+        .instructions-box p {
+          margin-bottom: 8px;
+          color: #fff;
+          line-height: 1.4;
+          font-size: 14px;
+        }
 
       .instructions-box .start-button {
         background: #006194;
@@ -189,15 +209,24 @@
         transition: all 0.1s ease;
       }
 
-      /* Responsive design */
-      @media (max-width: 768px) {
+        /* Always show mobile controls on mobile devices */
         .mobile-controls {
-          display: flex;
+          display: none;
+        }
+        
+        .virtual-joystick {
+          display: none;
         }
 
-        .virtual-joystick {
-          display: block;
-        }
+        /* Responsive design */
+        @media (max-width: 768px), (pointer: coarse) {
+          .mobile-controls {
+            display: flex !important;
+          }
+
+          .virtual-joystick {
+            display: block !important;
+          }
 
         .score-display {
           font-size: 18px;
@@ -219,22 +248,54 @@
         }
       }
 
-      @media (max-width: 480px) {
-        .instructions-box {
-          padding: 20px;
-          font-size: 14px;
-        }
+        @media (max-width: 480px) {
+          .instructions-box {
+            padding: 15px;
+            max-width: 95%;
+            max-height: 85%;
+          }
+          
+          .instructions-box h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+          }
+          
+          .instructions-box p {
+            font-size: 13px;
+            margin-bottom: 6px;
+          }
+          
+          .instructions-box .start-button {
+            padding: 12px 20px;
+            font-size: 16px;
+          }
 
-        .score-display {
-          font-size: 16px;
-          padding: 6px 10px;
-        }
+          .score-display {
+            font-size: 16px;
+            padding: 6px 10px;
+          }
 
-        .shot-clock {
-          font-size: 16px;
-          padding: 6px 10px;
+          .shot-clock {
+            font-size: 16px;
+            padding: 6px 10px;
+          }
+          
+          .mobile-button {
+            width: 50px;
+            height: 50px;
+            font-size: 14px;
+          }
+          
+          .virtual-joystick {
+            width: 100px;
+            height: 100px;
+          }
+          
+          .joystick-knob {
+            width: 35px;
+            height: 35px;
+          }
         }
-      }
     </style>
   </head>
   <body>
@@ -248,6 +309,7 @@
 
       <div class="instructions-overlay" id="instructionsOverlay">
         <div class="instructions-box">
+          <button class="close-instructions" id="closeInstructions">×</button>
           <h2>HOW TO PLAY RINGETTE</h2>
           <p><strong>Desktop Controls:</strong></p>
           <p>• ARROW KEYS or WASD: Move player</p>
@@ -319,10 +381,10 @@
       // Input handling
       let keys = {};
       let mousePos = { x: 0, y: 0 };
-      let isMobile =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-          navigator.userAgent
-        );
+        let isMobile =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          ) || window.innerWidth <= 768;
 
       // Mobile controls
       let joystickActive = false;
@@ -833,28 +895,49 @@
           mousePos.y = (e.clientY - rect.top) * scaleY;
         });
 
-        canvas.addEventListener("click", (e) => {
+        // Handle both click and touch for ring pickup
+        function handleCanvasTouch(e) {
           if (!gameRunning) return;
+          e.preventDefault();
 
           const rect = canvas.getBoundingClientRect();
           const scaleX = canvas.width / rect.width;
           const scaleY = canvas.height / rect.height;
+          
+          let clientX, clientY;
+          if (e.type === 'touchstart' || e.type === 'touchend') {
+            const touch = e.touches[0] || e.changedTouches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+          } else {
+            clientX = e.clientX;
+            clientY = e.clientY;
+          }
 
-          const clickX = (e.clientX - rect.left) * scaleX;
-          const clickY = (e.clientY - rect.top) * scaleY;
+          const clickX = (clientX - rect.left) * scaleX;
+          const clickY = (clientY - rect.top) * scaleY;
 
           handleRingPickup(clickX, clickY);
-        });
-
-        // Touch events for mobile
-        if (isMobile) {
-          setupMobileControls();
         }
+
+        canvas.addEventListener("click", handleCanvasTouch);
+        canvas.addEventListener("touchend", handleCanvasTouch);
+
+        // Always setup mobile controls (CSS will show/hide them)
+        setupMobileControls();
 
         // Start button
         document
           .getElementById("startButton")
           .addEventListener("click", startGame);
+          
+        // Close instructions button
+        document
+          .getElementById("closeInstructions")
+          .addEventListener("click", function() {
+            showInstructions = false;
+            document.getElementById('instructionsOverlay').style.display = 'none';
+          });
       }
 
       // Mobile controls setup
@@ -904,25 +987,35 @@
           knob.style.transform = "translate(-50%, -50%)";
         });
 
-        // Mobile buttons
-        document
-          .getElementById("pickupButton")
-          .addEventListener("touchstart", (e) => {
+        // Mobile buttons - handle both touch and click
+        function setupMobileButtons() {
+          const pickupBtn = document.getElementById("pickupButton");
+          const shootBtn = document.getElementById("shootButton");
+          
+          function handlePickup(e) {
             e.preventDefault();
+            if (!gameRunning) return;
             handleRingPickup(
               player.x + player.width / 2,
               player.y + player.height / 2
             );
-          });
-
-        document
-          .getElementById("shootButton")
-          .addEventListener("touchstart", (e) => {
+          }
+          
+          function handleShoot(e) {
             e.preventDefault();
             if (player.hasRing && gameRunning) {
               shootRing();
             }
-          });
+          }
+          
+          // Add both touch and click events
+          pickupBtn.addEventListener("touchend", handlePickup);
+          pickupBtn.addEventListener("click", handlePickup);
+          shootBtn.addEventListener("touchend", handleShoot);
+          shootBtn.addEventListener("click", handleShoot);
+        }
+        
+        setupMobileButtons();
 
         // Prevent scrolling on touch
         document.body.addEventListener(
