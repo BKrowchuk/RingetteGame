@@ -1,138 +1,264 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Ringette Game - Play Now!</title>
     <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #1a237e, #0d47a1);
-            color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #1a237e, #0d47a1);
+        color: #ffffff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
 
+      .container {
+        text-align: center;
+        padding: 2rem;
+        background-color: rgba(0, 0, 0, 0.7);
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+        max-width: 900px;
+        margin: 2rem;
+      }
+
+      h1 {
+        color: #ffd700;
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      .game-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin: 2rem 0;
+        flex-wrap: wrap;
+      }
+
+      .play-btn {
+        display: inline-block;
+        padding: 1.2rem 2.5rem;
+        background-color: #4caf50;
+        color: white;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 1.3rem;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+      }
+
+      .play-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+        background-color: #45a049;
+      }
+
+      .download-btn {
+        display: inline-block;
+        padding: 1.2rem 2.5rem;
+        background-color: #ffd700;
+        color: #1a237e;
+        text-decoration: none;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 1.3rem;
+        transition: transform 0.3s, box-shadow 0.3s;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+      }
+
+      .download-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);
+      }
+
+      .game-info {
+        margin: 2rem 0;
+        line-height: 1.6;
+        font-size: 1.1rem;
+      }
+
+      .features {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+      }
+
+      .feature-card {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 4px solid #ffd700;
+      }
+
+      .feature-card h3 {
+        color: #ffd700;
+        margin-top: 0;
+        margin-bottom: 1rem;
+      }
+
+      .feature-card ul {
+        list-style-type: none;
+        padding: 0;
+        text-align: left;
+        margin: 0;
+      }
+
+      .feature-card li {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+      }
+
+      .feature-card li:before {
+        content: "✓";
+        color: #4caf50;
+        position: absolute;
+        left: 0;
+        font-weight: bold;
+      }
+
+      .controls {
+        background-color: rgba(255, 255, 255, 0.1);
+        padding: 1.5rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+      }
+
+      .controls h2 {
+        color: #ffd700;
+        margin-top: 0;
+      }
+
+      .controls ul {
+        list-style-type: none;
+        padding: 0;
+        text-align: left;
+      }
+
+      .controls li {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+      }
+
+      .controls li:before {
+        content: "•";
+        color: #ffd700;
+        position: absolute;
+        left: 0;
+      }
+
+      footer {
+        margin-top: 2rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.7);
+      }
+
+      .highlight {
+        background: linear-gradient(90deg, #4caf50, #45a049);
+        padding: 0.2rem 0.5rem;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+      }
+
+      @media (max-width: 600px) {
         .container {
-            text-align: center;
-            padding: 2rem;
-            background-color: rgba(0, 0, 0, 0.7);
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            max-width: 800px;
-            margin: 2rem;
+          margin: 1rem;
+          padding: 1rem;
         }
 
         h1 {
-            color: #ffd700;
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+          font-size: 2.2rem;
         }
 
+        .game-buttons {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .play-btn,
         .download-btn {
-            display: inline-block;
-            padding: 1rem 2rem;
-            background-color: #ffd700;
-            color: #1a237e;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin: 1rem 0;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: none;
-            cursor: pointer;
+          width: 80%;
+          max-width: 300px;
         }
 
-        .download-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+        .features {
+          grid-template-columns: 1fr;
         }
-
-        .game-info {
-            margin: 2rem 0;
-            line-height: 1.6;
-        }
-
-        .controls {
-            background-color: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin: 1rem 0;
-        }
-
-        .controls h2 {
-            color: #ffd700;
-            margin-top: 0;
-        }
-
-        .controls ul {
-            list-style-type: none;
-            padding: 0;
-            text-align: left;
-        }
-
-        .controls li {
-            margin: 0.5rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-        }
-
-        .controls li:before {
-            content: "•";
-            color: #ffd700;
-            position: absolute;
-            left: 0;
-        }
-
-        footer {
-            margin-top: 2rem;
-            text-align: center;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                margin: 1rem;
-                padding: 1rem;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Ringette Game</h1>
-        <p class="game-info">Experience the excitement of ringette in this fast-paced game! Control your player, pick up the ring, and score goals while avoiding the goalie.</p>
-        
-        <a href="RingetteGame.exe" class="download-btn">Download Game</a>
-        
-        <div class="controls">
-            <h2>How to Play</h2>
-            <ul>
-                <li>Use ARROW KEYS or WASD to move your player</li>
-                <li>LEFT CLICK near the ring to pick it up</li>
-                <li>LEFT CLICK while holding to drop the ring</li>
-                <li>SPACE to shoot the ring</li>
-                <li>Mouse position determines shooting direction</li>
-                <li>Score by shooting into the goals</li>
-                <li>Watch out for the 30-second shot clock!</li>
-            </ul>
+      <h1>🏒 Ringette Game</h1>
+      <p class="game-info">
+        Experience the excitement of ringette in this fast-paced game! Control
+        your player, pick up the ring, and score goals while avoiding the AI
+        goalies. <span class="highlight">Now playable in your browser!</span>
+      </p>
+
+      <div class="game-buttons">
+        <a href="play.html" class="play-btn">🎮 PLAY ONLINE</a>
+        <a href="RingetteGame.exe" class="download-btn">💾 DOWNLOAD</a>
+      </div>
+
+      <div class="features">
+        <div class="feature-card">
+          <h3>🌐 Web Version</h3>
+          <ul>
+            <li>Play instantly in browser</li>
+            <li>Mobile-friendly controls</li>
+            <li>Touch screen support</li>
+            <li>No download required</li>
+          </ul>
         </div>
+        <div class="feature-card">
+          <h3>💻 Desktop Version</h3>
+          <ul>
+            <li>Full-featured gameplay</li>
+            <li>Offline play</li>
+            <li>High performance</li>
+            <li>Windows executable</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="controls">
+        <h2>How to Play</h2>
+        <ul>
+          <li>
+            <strong>Desktop:</strong> Arrow keys/WASD to move, Click to pickup
+            ring, Space to shoot
+          </li>
+          <li>
+            <strong>Mobile:</strong> Virtual joystick to move, Tap to pickup,
+            Shoot button
+          </li>
+          <li>Score by shooting the ring into the opponent's goals</li>
+          <li>Watch out for the 30-second shot clock!</li>
+          <li>AI goalies will try to block your shots</li>
+        </ul>
+      </div>
     </div>
-    
+
     <footer>
-        <p>© 2024 Ringette Game. All rights reserved.</p>
+      <p>© 2024 Ringette Game. All rights reserved.</p>
     </footer>
-</body>
-</html> 
+  </body>
+</html>

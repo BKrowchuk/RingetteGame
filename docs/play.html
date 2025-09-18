@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Ringette Game</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background: #0a0a0a;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 10px;
+        touch-action: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+
+      #gameContainer {
+        position: relative;
+        max-width: 100%;
+        max-height: 100%;
+      }
+
+      #gameCanvas {
+        border: 3px solid #006194;
+        background: #f0f8ff;
+        display: block;
+        touch-action: none;
+      }
+
+      #ui {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        pointer-events: none;
+        z-index: 10;
+      }
+
+      .score-display {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        font-size: 24px;
+        font-weight: bold;
+        color: #006194;
+        background: rgba(255, 255, 255, 0.9);
+        padding: 10px 15px;
+        border-radius: 8px;
+      }
+
+      .shot-clock {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        font-size: 24px;
+        font-weight: bold;
+        color: white;
+        background: rgba(0, 0, 0, 0.8);
+        padding: 10px 15px;
+        border-radius: 8px;
+        min-width: 60px;
+        text-align: center;
+      }
+
+      .instructions-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        pointer-events: auto;
+      }
+
+      .instructions-box {
+        background: #000;
+        border: 2px solid #fff;
+        border-radius: 10px;
+        padding: 30px;
+        max-width: 90%;
+        max-height: 90%;
+        overflow-y: auto;
+      }
+
+      .instructions-box h2 {
+        margin-bottom: 20px;
+        color: #fff;
+        text-align: center;
+      }
+
+      .instructions-box p {
+        margin-bottom: 10px;
+        color: #fff;
+        line-height: 1.5;
+      }
+
+      .instructions-box .start-button {
+        background: #006194;
+        color: white;
+        border: none;
+        padding: 15px 30px;
+        font-size: 18px;
+        border-radius: 5px;
+        cursor: pointer;
+        display: block;
+        margin: 20px auto 0;
+        pointer-events: auto;
+      }
+
+      .instructions-box .start-button:hover {
+        background: #004a73;
+      }
+
+      /* Mobile controls */
+      .mobile-controls {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: none;
+        gap: 20px;
+        pointer-events: auto;
+      }
+
+      .mobile-button {
+        background: rgba(0, 97, 148, 0.8);
+        color: white;
+        border: 2px solid #fff;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 18px;
+        cursor: pointer;
+        touch-action: manipulation;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+      }
+
+      .mobile-button:active {
+        background: rgba(0, 97, 148, 1);
+        transform: scale(0.95);
+      }
+
+      /* Virtual joystick */
+      .virtual-joystick {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        width: 120px;
+        height: 120px;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        border-radius: 50%;
+        display: none;
+        pointer-events: auto;
+      }
+
+      .joystick-knob {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 40px;
+        height: 40px;
+        background: rgba(0, 97, 148, 0.8);
+        border: 2px solid #fff;
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        transition: all 0.1s ease;
+      }
+
+      /* Responsive design */
+      @media (max-width: 768px) {
+        .mobile-controls {
+          display: flex;
+        }
+
+        .virtual-joystick {
+          display: block;
+        }
+
+        .score-display {
+          font-size: 18px;
+          top: 10px;
+          right: 10px;
+          padding: 8px 12px;
+        }
+
+        .shot-clock {
+          font-size: 18px;
+          top: 10px;
+          left: 10px;
+          padding: 8px 12px;
+        }
+
+        #gameCanvas {
+          max-width: 100vw;
+          max-height: 70vh;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .instructions-box {
+          padding: 20px;
+          font-size: 14px;
+        }
+
+        .score-display {
+          font-size: 16px;
+          padding: 6px 10px;
+        }
+
+        .shot-clock {
+          font-size: 16px;
+          padding: 6px 10px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameContainer">
+      <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+      <div id="ui">
+        <div class="score-display" id="scoreDisplay">Score: 0</div>
+        <div class="shot-clock" id="shotClock">30s</div>
+      </div>
+
+      <div class="instructions-overlay" id="instructionsOverlay">
+        <div class="instructions-box">
+          <h2>HOW TO PLAY RINGETTE</h2>
+          <p><strong>Desktop Controls:</strong></p>
+          <p>• ARROW KEYS or WASD: Move player</p>
+          <p>• LEFT CLICK near ring: Pick up/Drop ring</p>
+          <p>• SPACE: Shoot ring toward mouse cursor</p>
+          <p>• ESC: Show/Hide instructions</p>
+          <br />
+          <p><strong>Mobile Controls:</strong></p>
+          <p>• Virtual joystick: Move player</p>
+          <p>• TAP near ring: Pick up/Drop ring</p>
+          <p>• SHOOT button: Shoot ring forward</p>
+          <br />
+          <p><strong>Game Rules:</strong></p>
+          <p>• Get close to the ring to pick it up</p>
+          <p>• Score by shooting into the opponent's goals</p>
+          <p>• 30-second shot clock resets on goals and shots</p>
+          <p>• Goalies will try to block and throw the ring back</p>
+          <button class="start-button" id="startButton">START GAME</button>
+        </div>
+      </div>
+
+      <!-- Mobile Controls -->
+      <div class="virtual-joystick" id="virtualJoystick">
+        <div class="joystick-knob" id="joystickKnob"></div>
+      </div>
+
+      <div class="mobile-controls" id="mobileControls">
+        <button class="mobile-button" id="pickupButton">RING</button>
+        <button class="mobile-button" id="shootButton">SHOOT</button>
+      </div>
+    </div>
+
+    <script>
+      // Game Constants (converted from Python)
+      const RINK_BLUE = "#006194";
+      const ICE_WHITE = "#F0F8FF";
+      const RED_LINE = "#FF0000";
+      const BLUE_LINE = "#0000FF";
+      const RING_COLOR = "#0000FF";
+      const PLAYER_COLOR = "#FF0000";
+
+      const RINK_WIDTH = 800;
+      const RINK_HEIGHT = 600;
+      const CENTER_LINE_Y = RINK_HEIGHT / 2;
+      const BLUE_LINE_1_X = RINK_WIDTH / 3;
+      const BLUE_LINE_2_X = (RINK_WIDTH * 2) / 3;
+      const GOAL_LINE_1_X = 50;
+      const GOAL_LINE_2_X = RINK_WIDTH - 50;
+
+      const PLAYER_WIDTH = 40;
+      const PLAYER_HEIGHT = 40;
+      const PLAYER_SPEED = 5;
+      const RING_SPEED = 5;
+      const CIRCLE_RADIUS = 60;
+      const DOT_RADIUS = 6;
+      const DOT_OFFSET = CIRCLE_RADIUS / 2;
+      const PICKUP_RANGE = 70;
+      const SHOT_CLOCK_DURATION = 30;
+
+      // Game Variables
+      let canvas, ctx;
+      let gameRunning = false;
+      let showInstructions = true;
+      let score = 0;
+      let shotClock = SHOT_CLOCK_DURATION;
+      let lastTime = 0;
+      let ringPickedUpSinceGoal = false;
+
+      // Input handling
+      let keys = {};
+      let mousePos = { x: 0, y: 0 };
+      let isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+      // Mobile controls
+      let joystickActive = false;
+      let joystickCenter = { x: 0, y: 0 };
+      let joystickInput = { x: 0, y: 0 };
+
+      // Game Objects
+      let player, ring, goal1, goal2, goalie1, goalie2;
+
+      // Player Class
+      class Player {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = PLAYER_WIDTH;
+          this.height = PLAYER_HEIGHT;
+          this.hasRing = false;
+          this.direction = [1, 0];
+        }
+
+        update() {
+          let dx = 0,
+            dy = 0;
+
+          // Desktop controls
+          if (keys["ArrowLeft"] || keys["KeyA"]) {
+            dx = -PLAYER_SPEED;
+            this.direction = [-1, 0];
+          }
+          if (keys["ArrowRight"] || keys["KeyD"]) {
+            dx = PLAYER_SPEED;
+            this.direction = [1, 0];
+          }
+          if (keys["ArrowUp"] || keys["KeyW"]) {
+            dy = -PLAYER_SPEED;
+            this.direction = [0, -1];
+          }
+          if (keys["ArrowDown"] || keys["KeyS"]) {
+            dy = PLAYER_SPEED;
+            this.direction = [0, 1];
+          }
+
+          // Mobile controls
+          if (
+            isMobile &&
+            (Math.abs(joystickInput.x) > 0.1 || Math.abs(joystickInput.y) > 0.1)
+          ) {
+            dx = joystickInput.x * PLAYER_SPEED;
+            dy = joystickInput.y * PLAYER_SPEED;
+
+            if (Math.abs(dx) > Math.abs(dy)) {
+              this.direction = dx > 0 ? [1, 0] : [-1, 0];
+            } else {
+              this.direction = dy > 0 ? [0, 1] : [0, -1];
+            }
+          }
+
+          this.x += dx;
+          this.y += dy;
+
+          // Keep player on screen
+          this.x = Math.max(0, Math.min(RINK_WIDTH - this.width, this.x));
+          this.y = Math.max(0, Math.min(RINK_HEIGHT - this.height, this.y));
+        }
+
+        getShootDirection() {
+          // Calculate direction from ring to mouse/forward direction
+          if (isMobile) {
+            // For mobile, shoot in the direction the player is facing
+            return this.direction;
+          } else {
+            // For desktop, shoot toward mouse
+            const ringX = this.x + this.width + 10;
+            const ringY = this.y + this.height;
+            const dx = mousePos.x - ringX;
+            const dy = mousePos.y - ringY;
+            const length = Math.sqrt(dx * dx + dy * dy);
+            if (length > 0) {
+              return [dx / length, dy / length];
+            }
+          }
+          return [1, 0];
+        }
+
+        draw() {
+          // Draw player as rectangle with stick
+          ctx.fillStyle = PLAYER_COLOR;
+          ctx.fillRect(this.x, this.y, this.width, this.height);
+
+          // Draw stick
+          ctx.strokeStyle = "#8B4513";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(this.x + this.width / 2, this.y + this.height / 2);
+          ctx.lineTo(this.x + this.width, this.y + this.height / 2);
+          ctx.stroke();
+        }
+      }
+
+      // Ring Class
+      class Ring {
+        constructor() {
+          this.x = RINK_WIDTH / 2 - DOT_OFFSET;
+          this.y = RINK_HEIGHT / 2;
+          this.width = 20;
+          this.height = 20;
+          this.velocity = [0, 0];
+          this.active = false;
+          this.decayFactor = 0.99;
+        }
+
+        update() {
+          if (this.active) {
+            this.velocity[0] *= this.decayFactor;
+            this.velocity[1] *= this.decayFactor;
+
+            if (
+              Math.abs(this.velocity[0]) < 0.1 &&
+              Math.abs(this.velocity[1]) < 0.1
+            ) {
+              this.velocity = [0, 0];
+            }
+
+            this.x += this.velocity[0];
+            this.y += this.velocity[1];
+
+            // Bounce off walls
+            if (this.x < 0 || this.x > RINK_WIDTH - this.width) {
+              this.velocity[0] *= -1;
+            }
+            if (this.y < 0 || this.y > RINK_HEIGHT - this.height) {
+              this.velocity[1] *= -1;
+            }
+
+            // Keep ring on screen
+            this.x = Math.max(0, Math.min(RINK_WIDTH - this.width, this.x));
+            this.y = Math.max(0, Math.min(RINK_HEIGHT - this.height, this.y));
+          }
+        }
+
+        draw() {
+          // Draw blue ring with white center
+          ctx.fillStyle = RING_COLOR;
+          ctx.beginPath();
+          ctx.arc(
+            this.x + this.width / 2,
+            this.y + this.height / 2,
+            10,
+            0,
+            2 * Math.PI
+          );
+          ctx.fill();
+
+          ctx.fillStyle = ICE_WHITE;
+          ctx.beginPath();
+          ctx.arc(
+            this.x + this.width / 2,
+            this.y + this.height / 2,
+            5,
+            0,
+            2 * Math.PI
+          );
+          ctx.fill();
+        }
+      }
+
+      // Goal Class
+      class Goal {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = 20;
+          this.height = 100;
+        }
+
+        draw() {
+          ctx.fillStyle = RINK_BLUE;
+          ctx.fillRect(this.x, this.y, this.width, this.height);
+        }
+
+        checkCollision(ring) {
+          return (
+            ring.x < this.x + this.width &&
+            ring.x + ring.width > this.x &&
+            ring.y < this.y + this.height &&
+            ring.y + ring.height > this.y
+          );
+        }
+      }
+
+      // Goalie Class
+      class Goalie {
+        constructor(x, y) {
+          this.x = x;
+          this.y = y;
+          this.width = 20;
+          this.height = 40;
+          this.speed = 1;
+          this.direction = 1;
+          this.goalTop = RINK_HEIGHT / 2 - 50;
+          this.goalBottom = RINK_HEIGHT / 2 + 50;
+          this.hasRing = false;
+          this.holdTime = 0;
+          this.throwDirection = [0, 0];
+          this.throwCooldown = 0;
+        }
+
+        update() {
+          if (!this.hasRing) {
+            this.y += this.speed * this.direction;
+
+            if (this.y <= this.goalTop) {
+              this.direction = 1;
+            } else if (this.y + this.height >= this.goalBottom) {
+              this.direction = -1;
+            }
+
+            if (this.throwCooldown > 0) {
+              this.throwCooldown--;
+            }
+          }
+
+          if (this.hasRing) {
+            this.holdTime++;
+            if (this.holdTime >= 180) {
+              // 3 seconds at 60 FPS
+              this.hasRing = false;
+              this.throwCooldown = 120; // 2 second cooldown
+              this.holdTime = 0;
+              return this.throwDirection;
+            }
+          }
+          return null;
+        }
+
+        canCatch() {
+          return !this.hasRing && this.throwCooldown === 0;
+        }
+
+        checkCollision(ring) {
+          return (
+            ring.x < this.x + this.width &&
+            ring.x + ring.width > this.x &&
+            ring.y < this.y + this.height &&
+            ring.y + ring.height > this.y
+          );
+        }
+
+        draw() {
+          // Draw goalie with red jersey
+          ctx.fillStyle = "#DC1414";
+          ctx.fillRect(this.x + 5, this.y + 10, 10, 20); // Body
+
+          // Head
+          ctx.fillStyle = "#FFDBBA";
+          ctx.beginPath();
+          ctx.arc(this.x + 10, this.y + 7, 5, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // Arms and stick
+          ctx.strokeStyle = "#DC1414";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(this.x + 5, this.y + 15);
+          ctx.lineTo(this.x + 3, this.y + 25);
+          ctx.moveTo(this.x + 15, this.y + 15);
+          ctx.lineTo(this.x + 17, this.y + 25);
+          ctx.stroke();
+
+          // Goalie stick
+          ctx.strokeStyle = "#8B4513";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(this.x + 3, this.y + 25);
+          ctx.lineTo(this.x + 17, this.y + 25);
+          ctx.stroke();
+
+          // Legs
+          ctx.strokeStyle = "#000";
+          ctx.beginPath();
+          ctx.moveTo(this.x + 7, this.y + 30);
+          ctx.lineTo(this.x + 7, this.y + 38);
+          ctx.moveTo(this.x + 13, this.y + 30);
+          ctx.lineTo(this.x + 13, this.y + 38);
+          ctx.stroke();
+        }
+      }
+
+      // Draw rink function
+      function drawRink() {
+        // Clear canvas with ice white
+        ctx.fillStyle = ICE_WHITE;
+        ctx.fillRect(0, 0, RINK_WIDTH, RINK_HEIGHT);
+
+        // Draw rink outline
+        ctx.strokeStyle = RINK_BLUE;
+        ctx.lineWidth = 15;
+        ctx.strokeRect(0, 0, RINK_WIDTH, RINK_HEIGHT);
+
+        // Center line
+        ctx.strokeStyle = RED_LINE;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(RINK_WIDTH / 2, 0);
+        ctx.lineTo(RINK_WIDTH / 2, RINK_HEIGHT);
+        ctx.stroke();
+
+        // Blue lines
+        ctx.strokeStyle = BLUE_LINE;
+        ctx.lineWidth = 10;
+        const blueLine1X = RINK_WIDTH / 2 - 100;
+        const blueLine2X = RINK_WIDTH / 2 + 100;
+
+        ctx.beginPath();
+        ctx.moveTo(blueLine1X, 0);
+        ctx.lineTo(blueLine1X, RINK_HEIGHT);
+        ctx.moveTo(blueLine2X, 0);
+        ctx.lineTo(blueLine2X, RINK_HEIGHT);
+        ctx.stroke();
+
+        // Goal lines
+        ctx.strokeStyle = RED_LINE;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(GOAL_LINE_1_X, 0);
+        ctx.lineTo(GOAL_LINE_1_X, RINK_HEIGHT);
+        ctx.moveTo(GOAL_LINE_2_X, 0);
+        ctx.lineTo(GOAL_LINE_2_X, RINK_HEIGHT);
+        ctx.stroke();
+
+        // Face-off circles
+        ctx.strokeStyle = BLUE_LINE;
+        ctx.lineWidth = 2;
+
+        // Center circle
+        ctx.beginPath();
+        ctx.arc(RINK_WIDTH / 2, RINK_HEIGHT / 2, CIRCLE_RADIUS, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Center dots
+        ctx.fillStyle = BLUE_LINE;
+        ctx.beginPath();
+        ctx.arc(
+          RINK_WIDTH / 2 - DOT_OFFSET,
+          RINK_HEIGHT / 2,
+          DOT_RADIUS,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(
+          RINK_WIDTH / 2 + DOT_OFFSET,
+          RINK_HEIGHT / 2,
+          DOT_RADIUS,
+          0,
+          2 * Math.PI
+        );
+        ctx.fill();
+
+        // Other face-off circles
+        const rightFaceOff = RINK_WIDTH / 2 - 280;
+        const leftFaceOff = RINK_WIDTH / 2 + 280;
+        const higherFaceOff = RINK_HEIGHT / 4;
+        const lowerFaceOff = (RINK_HEIGHT * 3) / 4;
+
+        // Draw face-off circles and dots
+        const faceOffPositions = [
+          [rightFaceOff, higherFaceOff],
+          [leftFaceOff, higherFaceOff],
+          [rightFaceOff, lowerFaceOff],
+          [leftFaceOff, lowerFaceOff],
+        ];
+
+        faceOffPositions.forEach(([x, y]) => {
+          ctx.strokeStyle = BLUE_LINE;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(x, y, CIRCLE_RADIUS, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          // Vertical line through circle
+          ctx.beginPath();
+          ctx.moveTo(x, y - CIRCLE_RADIUS);
+          ctx.lineTo(x, y + CIRCLE_RADIUS);
+          ctx.stroke();
+
+          // Dots
+          ctx.fillStyle = BLUE_LINE;
+          ctx.beginPath();
+          ctx.arc(x - DOT_OFFSET, y, DOT_RADIUS, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + DOT_OFFSET, y, DOT_RADIUS, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+
+        // Goal creases
+        ctx.strokeStyle = BLUE_LINE;
+        ctx.lineWidth = 3;
+        const creaseRadius = 60;
+
+        // Left crease
+        ctx.beginPath();
+        ctx.arc(
+          GOAL_LINE_1_X,
+          RINK_HEIGHT / 2,
+          creaseRadius,
+          -Math.PI / 2,
+          Math.PI / 2
+        );
+        ctx.stroke();
+
+        // Right crease
+        ctx.beginPath();
+        ctx.arc(
+          GOAL_LINE_2_X,
+          RINK_HEIGHT / 2,
+          creaseRadius,
+          Math.PI / 2,
+          (3 * Math.PI) / 2
+        );
+        ctx.stroke();
+
+        // Free play lines
+        ctx.strokeStyle = RED_LINE;
+        ctx.lineWidth = 3;
+        const freePlayDistance = 150;
+
+        ctx.beginPath();
+        ctx.moveTo(GOAL_LINE_1_X + freePlayDistance, 0);
+        ctx.lineTo(GOAL_LINE_1_X + freePlayDistance, RINK_HEIGHT);
+        ctx.moveTo(GOAL_LINE_2_X - freePlayDistance, 0);
+        ctx.lineTo(GOAL_LINE_2_X - freePlayDistance, RINK_HEIGHT);
+        ctx.stroke();
+      }
+
+      // Initialize game
+      function initGame() {
+        canvas = document.getElementById("gameCanvas");
+        ctx = canvas.getContext("2d");
+
+        // Scale canvas for mobile
+        if (isMobile) {
+          const scale = Math.min(
+            window.innerWidth / RINK_WIDTH,
+            (window.innerHeight * 0.7) / RINK_HEIGHT
+          );
+          canvas.style.width = RINK_WIDTH * scale + "px";
+          canvas.style.height = RINK_HEIGHT * scale + "px";
+        }
+
+        // Create game objects
+        player = new Player(RINK_WIDTH / 2 - 100, RINK_HEIGHT / 2);
+        ring = new Ring();
+        goal1 = new Goal(GOAL_LINE_1_X - 20, RINK_HEIGHT / 2 - 50);
+        goal2 = new Goal(GOAL_LINE_2_X, RINK_HEIGHT / 2 - 50);
+        goalie1 = new Goalie(GOAL_LINE_1_X + 30, RINK_HEIGHT / 2 - 30);
+        goalie2 = new Goalie(GOAL_LINE_2_X - 30, RINK_HEIGHT / 2 - 30);
+
+        setupEventListeners();
+        gameLoop(0);
+      }
+
+      // Event Listeners
+      function setupEventListeners() {
+        // Keyboard events
+        document.addEventListener("keydown", (e) => {
+          keys[e.code] = true;
+
+          if (e.code === "Space" && player.hasRing && gameRunning) {
+            e.preventDefault();
+            shootRing();
+          }
+
+          if (e.code === "Escape") {
+            e.preventDefault();
+            showInstructions = !showInstructions;
+            document.getElementById("instructionsOverlay").style.display =
+              showInstructions ? "flex" : "none";
+          }
+        });
+
+        document.addEventListener("keyup", (e) => {
+          keys[e.code] = false;
+        });
+
+        // Mouse events
+        canvas.addEventListener("mousemove", (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+
+          mousePos.x = (e.clientX - rect.left) * scaleX;
+          mousePos.y = (e.clientY - rect.top) * scaleY;
+        });
+
+        canvas.addEventListener("click", (e) => {
+          if (!gameRunning) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+
+          const clickX = (e.clientX - rect.left) * scaleX;
+          const clickY = (e.clientY - rect.top) * scaleY;
+
+          handleRingPickup(clickX, clickY);
+        });
+
+        // Touch events for mobile
+        if (isMobile) {
+          setupMobileControls();
+        }
+
+        // Start button
+        document
+          .getElementById("startButton")
+          .addEventListener("click", startGame);
+      }
+
+      // Mobile controls setup
+      function setupMobileControls() {
+        const joystick = document.getElementById("virtualJoystick");
+        const knob = document.getElementById("joystickKnob");
+
+        joystick.addEventListener("touchstart", (e) => {
+          e.preventDefault();
+          joystickActive = true;
+          const rect = joystick.getBoundingClientRect();
+          joystickCenter.x = rect.left + rect.width / 2;
+          joystickCenter.y = rect.top + rect.height / 2;
+        });
+
+        joystick.addEventListener("touchmove", (e) => {
+          if (!joystickActive) return;
+          e.preventDefault();
+
+          const touch = e.touches[0];
+          const dx = touch.clientX - joystickCenter.x;
+          const dy = touch.clientY - joystickCenter.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          const maxDistance = 40; // Half of joystick radius
+
+          if (distance <= maxDistance) {
+            joystickInput.x = dx / maxDistance;
+            joystickInput.y = dy / maxDistance;
+            knob.style.transform = `translate(${dx - 20}px, ${dy - 20}px)`;
+          } else {
+            const angle = Math.atan2(dy, dx);
+            const limitedX = Math.cos(angle) * maxDistance;
+            const limitedY = Math.sin(angle) * maxDistance;
+            joystickInput.x = limitedX / maxDistance;
+            joystickInput.y = limitedY / maxDistance;
+            knob.style.transform = `translate(${limitedX - 20}px, ${
+              limitedY - 20
+            }px)`;
+          }
+        });
+
+        joystick.addEventListener("touchend", (e) => {
+          e.preventDefault();
+          joystickActive = false;
+          joystickInput.x = 0;
+          joystickInput.y = 0;
+          knob.style.transform = "translate(-50%, -50%)";
+        });
+
+        // Mobile buttons
+        document
+          .getElementById("pickupButton")
+          .addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            handleRingPickup(
+              player.x + player.width / 2,
+              player.y + player.height / 2
+            );
+          });
+
+        document
+          .getElementById("shootButton")
+          .addEventListener("touchstart", (e) => {
+            e.preventDefault();
+            if (player.hasRing && gameRunning) {
+              shootRing();
+            }
+          });
+
+        // Prevent scrolling on touch
+        document.body.addEventListener(
+          "touchstart",
+          (e) => e.preventDefault(),
+          { passive: false }
+        );
+        document.body.addEventListener("touchend", (e) => e.preventDefault(), {
+          passive: false,
+        });
+        document.body.addEventListener("touchmove", (e) => e.preventDefault(), {
+          passive: false,
+        });
+      }
+
+      // Game functions
+      function startGame() {
+        gameRunning = true;
+        showInstructions = false;
+        document.getElementById("instructionsOverlay").style.display = "none";
+      }
+
+      function shootRing() {
+        player.hasRing = false;
+        ring.active = true;
+        ring.x = player.x + player.width + 10;
+        ring.y = player.y + player.height;
+
+        const direction = player.getShootDirection();
+        ring.velocity = [direction[0] * RING_SPEED, direction[1] * RING_SPEED];
+        ring.decayFactor = 0.99;
+        shotClock = SHOT_CLOCK_DURATION;
+      }
+
+      function handleRingPickup(x, y) {
+        const dx = ring.x + ring.width / 2 - x;
+        const dy = ring.y + ring.height / 2 - y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= PICKUP_RANGE) {
+          player.hasRing = !player.hasRing;
+          if (player.hasRing) {
+            ring.x = player.x + player.width + 10;
+            ring.y = player.y + player.height;
+            ring.active = false;
+            ring.velocity = [0, 0];
+            ringPickedUpSinceGoal = true;
+          }
+        }
+      }
+
+      function checkGoals() {
+        if (!ring.active) return;
+
+        if (goal1.checkCollision(ring)) {
+          score++;
+          ring.active = false;
+          ring.x = RINK_WIDTH / 2 - DOT_OFFSET;
+          ring.y = RINK_HEIGHT / 2;
+          ring.velocity = [0, 0];
+          shotClock = SHOT_CLOCK_DURATION;
+          ringPickedUpSinceGoal = false;
+          updateScore();
+        } else if (goal2.checkCollision(ring)) {
+          score++;
+          ring.active = false;
+          ring.x = RINK_WIDTH / 2 + DOT_OFFSET;
+          ring.y = RINK_HEIGHT / 2;
+          ring.velocity = [0, 0];
+          shotClock = SHOT_CLOCK_DURATION;
+          ringPickedUpSinceGoal = false;
+          updateScore();
+        }
+      }
+
+      function checkGoalieInteractions() {
+        if (!ring.active) return;
+
+        // Check goalie1
+        if (goalie1.checkCollision(ring) && goalie1.canCatch()) {
+          if (Math.random() < 0.7) {
+            ring.active = false;
+            goalie1.hasRing = true;
+            goalie1.holdTime = 0;
+            goalie1.throwDirection = [1, Math.random() * 2 - 1];
+            ring.x = goalie1.x;
+            ring.y = goalie1.y;
+          } else {
+            ring.velocity[0] *= -1;
+            ring.velocity[1] *= -1;
+            ring.velocity[0] += (Math.random() - 0.5) * 2;
+            ring.velocity[1] += (Math.random() - 0.5) * 2;
+            ring.decayFactor = 0.98;
+          }
+          shotClock = SHOT_CLOCK_DURATION;
+        }
+
+        // Check goalie2
+        if (goalie2.checkCollision(ring) && goalie2.canCatch()) {
+          if (Math.random() < 0.7) {
+            ring.active = false;
+            goalie2.hasRing = true;
+            goalie2.holdTime = 0;
+            goalie2.throwDirection = [-1, Math.random() * 2 - 1];
+            ring.x = goalie2.x;
+            ring.y = goalie2.y;
+          } else {
+            ring.velocity[0] *= -1;
+            ring.velocity[1] *= -1;
+            ring.velocity[0] += (Math.random() - 0.5) * 2;
+            ring.velocity[1] += (Math.random() - 0.5) * 2;
+            ring.decayFactor = 0.98;
+          }
+          shotClock = SHOT_CLOCK_DURATION;
+        }
+      }
+
+      function updateGoalies() {
+        const throwDirection1 = goalie1.update();
+        if (throwDirection1) {
+          ring.active = true;
+          ring.x = goalie1.x + 20;
+          ring.y = goalie1.y + goalie1.height / 2;
+          ring.velocity = [
+            throwDirection1[0] * RING_SPEED * 0.5,
+            throwDirection1[1] * RING_SPEED * 0.5,
+          ];
+          ring.decayFactor = 0.98;
+          shotClock = SHOT_CLOCK_DURATION;
+        }
+
+        const throwDirection2 = goalie2.update();
+        if (throwDirection2) {
+          ring.active = true;
+          ring.x = goalie2.x - 20;
+          ring.y = goalie2.y + goalie2.height / 2;
+          ring.velocity = [
+            throwDirection2[0] * RING_SPEED * 0.5,
+            throwDirection2[1] * RING_SPEED * 0.5,
+          ];
+          ring.decayFactor = 0.98;
+          shotClock = SHOT_CLOCK_DURATION;
+        }
+      }
+
+      function updateScore() {
+        document.getElementById("scoreDisplay").textContent = `Score: ${score}`;
+      }
+
+      function updateShotClock() {
+        document.getElementById("shotClock").textContent = `${shotClock}s`;
+      }
+
+      // Main game loop
+      function gameLoop(currentTime) {
+        if (gameRunning) {
+          // Update shot clock
+          if (currentTime - lastTime >= 1000) {
+            if (ringPickedUpSinceGoal) {
+              shotClock--;
+              if (shotClock <= 0) {
+                player.hasRing = false;
+                ring.active = false;
+                ring.velocity = [0, 0];
+                ring.x = RINK_WIDTH / 2 - DOT_OFFSET;
+                ring.y = RINK_HEIGHT / 2;
+                shotClock = SHOT_CLOCK_DURATION;
+                ringPickedUpSinceGoal = false;
+              }
+            }
+            updateShotClock();
+            lastTime = currentTime;
+          }
+
+          // Update game objects
+          player.update();
+          ring.update();
+          updateGoalies();
+
+          // Update ring position if player has it
+          if (player.hasRing && !ring.active) {
+            ring.x = player.x + player.width + 10;
+            ring.y = player.y + player.height;
+          }
+
+          // Check collisions
+          checkGoals();
+          checkGoalieInteractions();
+        }
+
+        // Draw everything
+        drawRink();
+        goal1.draw();
+        goal2.draw();
+        goalie1.draw();
+        goalie2.draw();
+        ring.draw();
+        player.draw();
+
+        requestAnimationFrame(gameLoop);
+      }
+
+      // Initialize when page loads
+      window.addEventListener("load", initGame);
+    </script>
+  </body>
+</html>
