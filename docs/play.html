@@ -332,6 +332,14 @@
       // Game Objects
       let player, ring, goal1, goal2, goalie1, goalie2;
 
+      // Load lynx logo
+      let lynxLogo = new Image();
+      lynxLogo.src = "lynxLogo.svg";
+      let logoLoaded = false;
+      lynxLogo.onload = function () {
+        logoLoaded = true;
+      };
+
       // Player Class
       class Player {
         constructor(x, y) {
@@ -394,9 +402,9 @@
             // For mobile, shoot in the direction the player is facing
             return this.direction;
           } else {
-            // For desktop, shoot toward mouse
-            const ringX = this.x + this.width + 10;
-            const ringY = this.y + this.height;
+            // For desktop, shoot toward mouse from ring position
+            const ringX = this.x + this.width - 10 + 10; // Ring center X (ring.x + ring.width/2)
+            const ringY = this.y + this.height - 10 + 10; // Ring center Y (ring.y + ring.height/2)
             const dx = mousePos.x - ringX;
             const dy = mousePos.y - ringY;
             const length = Math.sqrt(dx * dx + dy * dy);
@@ -408,17 +416,22 @@
         }
 
         draw() {
-          // Draw player as rectangle with stick
-          ctx.fillStyle = PLAYER_COLOR;
-          ctx.fillRect(this.x, this.y, this.width, this.height);
+          if (logoLoaded) {
+            // Draw the lynx logo scaled to player size
+            ctx.drawImage(lynxLogo, this.x, this.y, this.width, this.height);
+          } else {
+            // Fallback: draw a simple player shape while logo loads
+            ctx.fillStyle = PLAYER_COLOR;
+            ctx.fillRect(this.x, this.y, this.width, this.height);
 
-          // Draw stick
-          ctx.strokeStyle = "#8B4513";
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.moveTo(this.x + this.width / 2, this.y + this.height / 2);
-          ctx.lineTo(this.x + this.width, this.y + this.height / 2);
-          ctx.stroke();
+            // Draw stick
+            ctx.strokeStyle = "#8B4513";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.lineTo(this.x + this.width, this.y + this.height / 2);
+            ctx.stroke();
+          }
         }
       }
 
@@ -935,8 +948,9 @@
       function shootRing() {
         player.hasRing = false;
         ring.active = true;
-        ring.x = player.x + player.width + 10;
-        ring.y = player.y + player.height;
+        // Position ring at the end of the stick (bottom-right of player)
+        ring.x = player.x + player.width - 10; // Ring's left edge near player's right edge
+        ring.y = player.y + player.height - 10; // Ring's top edge near player's bottom edge
 
         const direction = player.getShootDirection();
         ring.velocity = [direction[0] * RING_SPEED, direction[1] * RING_SPEED];
@@ -952,8 +966,9 @@
         if (distance <= PICKUP_RANGE) {
           player.hasRing = !player.hasRing;
           if (player.hasRing) {
-            ring.x = player.x + player.width + 10;
-            ring.y = player.y + player.height;
+            // Position ring at the end of the stick (bottom-right of player)
+            ring.x = player.x + player.width - 10; // Ring's left edge near player's right edge
+            ring.y = player.y + player.height - 10; // Ring's top edge near player's bottom edge
             ring.active = false;
             ring.velocity = [0, 0];
             ringPickedUpSinceGoal = true;
@@ -1091,8 +1106,9 @@
 
           // Update ring position if player has it
           if (player.hasRing && !ring.active) {
-            ring.x = player.x + player.width + 10;
-            ring.y = player.y + player.height;
+            // Position ring at the end of the stick (bottom-right of player)
+            ring.x = player.x + player.width - 10; // Ring's left edge near player's right edge
+            ring.y = player.y + player.height - 10; // Ring's top edge near player's bottom edge
           }
 
           // Check collisions
