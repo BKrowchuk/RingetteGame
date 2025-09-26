@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, minimal-ui"
     />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -12,6 +12,10 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    <meta name="apple-touch-fullscreen" content="yes" />
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="msapplication-navbutton-color" content="#0a0a0a" />
+    <meta name="apple-mobile-web-app-title" content="Ringette Game" />
     <title>Ringette Game</title>
     <style>
       * {
@@ -34,6 +38,19 @@
         -webkit-user-select: none;
         user-select: none;
         overflow: hidden;
+        /* Safari fullscreen support */
+        -webkit-overflow-scrolling: touch;
+        -webkit-appearance: none;
+        appearance: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Prevent Safari bounce scrolling */
+        overscroll-behavior: none;
+        -webkit-touch-callout: none;
+        -webkit-text-size-adjust: none;
       }
 
       #gameContainer {
@@ -397,8 +414,28 @@
         }
       }
 
+      /* Safari mobile specific styles */
+      @supports (-webkit-touch-callout: none) {
+        body {
+          /* Safari-specific fullscreen handling */
+          height: -webkit-fill-available;
+          min-height: -webkit-fill-available;
+        }
+
+        #gameContainer {
+          height: -webkit-fill-available;
+          min-height: -webkit-fill-available;
+        }
+      }
+
       /* Fullscreen mobile landscape styles */
       @media screen and (max-width: 900px) and (orientation: landscape) {
+        html {
+          height: 100%;
+          overflow: hidden;
+          -webkit-text-size-adjust: 100%;
+        }
+
         body {
           padding: 0;
           min-height: 100vh;
@@ -408,6 +445,10 @@
           top: 0;
           left: 0;
           background: #0a0a0a;
+          /* Enhanced Safari fullscreen */
+          height: -webkit-fill-available;
+          min-height: -webkit-fill-available;
+          transform: translate3d(0, 0, 0);
         }
 
         #gameContainer {
@@ -421,6 +462,9 @@
           display: flex;
           align-items: center;
           justify-content: center;
+          /* Safari fullscreen container */
+          height: -webkit-fill-available;
+          transform: translate3d(0, 0, 0);
         }
 
         #gameCanvas {
@@ -430,32 +474,35 @@
           max-height: 100vh !important;
           border: none;
           border-radius: 0;
+          /* Safari canvas fullscreen */
+          height: -webkit-fill-available !important;
+          transform: translate3d(0, 0, 0);
         }
 
         .score-display {
-          top: env(safe-area-inset-top, 10px);
-          right: env(safe-area-inset-right, 10px);
+          top: max(env(safe-area-inset-top), 10px);
+          right: max(env(safe-area-inset-right), 10px);
           font-size: 20px;
           background: rgba(255, 255, 255, 0.95);
           z-index: 15;
         }
 
         .shot-clock {
-          top: env(safe-area-inset-top, 10px);
-          left: env(safe-area-inset-left, 10px);
+          top: max(env(safe-area-inset-top), 10px);
+          left: max(env(safe-area-inset-left), 10px);
           font-size: 20px;
           background: rgba(0, 0, 0, 0.9);
           z-index: 15;
         }
 
         .mobile-controls {
-          bottom: env(safe-area-inset-bottom, 20px);
+          bottom: max(env(safe-area-inset-bottom), 20px);
           z-index: 15;
         }
 
         .virtual-joystick {
-          bottom: env(safe-area-inset-bottom, 20px);
-          left: env(safe-area-inset-left, 20px);
+          bottom: max(env(safe-area-inset-bottom), 20px);
+          left: max(env(safe-area-inset-left), 20px);
           z-index: 15;
         }
       }
@@ -598,6 +645,12 @@
           navigator.userAgent
         ) || window.innerWidth <= 768;
 
+      // Detect Safari mobile specifically
+      let isSafariMobile =
+        /iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+        /Safari/i.test(navigator.userAgent) &&
+        !/Chrome|CriOS|FxiOS/i.test(navigator.userAgent);
+
       // Mobile controls
       let joystickActive = false;
       let joystickCenter = { x: 0, y: 0 };
@@ -647,17 +700,28 @@
             this.direction = [0, 1];
           }
 
-          // Mobile controls
+          // Mobile controls with enhanced sensitivity
           if (
             isMobile &&
-            (Math.abs(joystickInput.x) > 0.1 || Math.abs(joystickInput.y) > 0.1)
+            (Math.abs(joystickInput.x) > 0.05 ||
+              Math.abs(joystickInput.y) > 0.05)
           ) {
-            dx = joystickInput.x * PLAYER_SPEED;
-            dy = joystickInput.y * PLAYER_SPEED;
+            // Apply easing function for smoother movement
+            const sensitivityCurve = (input) => {
+              const absInput = Math.abs(input);
+              if (absInput < 0.1) return 0;
+              // Use quadratic easing for better feel
+              const sign = input > 0 ? 1 : -1;
+              return sign * (absInput * absInput * 0.8 + absInput * 0.2);
+            };
 
+            dx = sensitivityCurve(joystickInput.x) * PLAYER_SPEED;
+            dy = sensitivityCurve(joystickInput.y) * PLAYER_SPEED;
+
+            // Update direction based on movement
             if (Math.abs(dx) > Math.abs(dy)) {
               this.direction = dx > 0 ? [1, 0] : [-1, 0];
-            } else {
+            } else if (Math.abs(dy) > 0.1) {
               this.direction = dy > 0 ? [0, 1] : [0, -1];
             }
           }
@@ -1054,18 +1118,46 @@
 
         // Scale canvas for mobile
         if (isMobile) {
-          if (
+          const isLandscape =
             window.orientation === 90 ||
             window.orientation === -90 ||
             (window.matchMedia &&
-              window.matchMedia("(orientation: landscape)").matches)
-          ) {
+              window.matchMedia("(orientation: landscape)").matches);
+
+          if (isLandscape) {
             // Landscape mode - fullscreen
-            const scaleX = window.innerWidth / RINK_WIDTH;
-            const scaleY = window.innerHeight / RINK_HEIGHT;
-            const scale = Math.min(scaleX, scaleY);
-            canvas.style.width = window.innerWidth + "px";
-            canvas.style.height = window.innerHeight + "px";
+            let canvasWidth = window.innerWidth;
+            let canvasHeight = window.innerHeight;
+
+            // Safari-specific viewport handling
+            if (isSafariMobile) {
+              // Use viewport dimensions that account for Safari's interface
+              canvasWidth = Math.max(window.innerWidth, window.screen.width);
+              canvasHeight = Math.max(
+                window.innerHeight,
+                window.screen.height - 140
+              ); // Account for Safari UI
+
+              // Force Safari to use available space
+              setTimeout(() => {
+                canvas.style.width = canvasWidth + "px";
+                canvas.style.height = canvasHeight + "px";
+              }, 100);
+            }
+
+            canvas.style.width = canvasWidth + "px";
+            canvas.style.height = canvasHeight + "px";
+
+            // Ensure proper aspect ratio scaling
+            const scaleX = canvasWidth / RINK_WIDTH;
+            const scaleY = canvasHeight / RINK_HEIGHT;
+            const optimalScale = Math.min(scaleX, scaleY);
+
+            // Apply scaling while maintaining center positioning
+            const finalWidth = RINK_WIDTH * optimalScale;
+            const finalHeight = RINK_HEIGHT * optimalScale;
+            canvas.style.width = finalWidth + "px";
+            canvas.style.height = finalHeight + "px";
           } else {
             // Portrait mode - regular scaling
             const scale = Math.min(
@@ -1095,14 +1187,56 @@
         function handleOrientationChange() {
           setTimeout(() => {
             if (isMobile) {
+              // Safari-specific fullscreen handling
+              if (isSafariMobile) {
+                // Force Safari to hide address bar
+                window.scrollTo(0, 1);
+                setTimeout(() => window.scrollTo(0, 0), 100);
+              }
               initGame(); // Reinitialize with new orientation
             }
-          }, 100); // Small delay to ensure orientation change is complete
+          }, 300); // Increased delay for Safari
         }
 
         // Listen for orientation changes
         window.addEventListener("orientationchange", handleOrientationChange);
         window.addEventListener("resize", handleOrientationChange);
+
+        // Safari-specific scroll prevention
+        if (isSafariMobile) {
+          // Prevent Safari bounce scrolling
+          let startY = 0;
+          document.addEventListener(
+            "touchstart",
+            function (e) {
+              startY = e.touches[0].pageY;
+            },
+            { passive: false }
+          );
+
+          document.addEventListener(
+            "touchmove",
+            function (e) {
+              const y = e.touches[0].pageY;
+              // Only prevent if trying to scroll past boundaries
+              if (
+                (y > startY && window.pageYOffset === 0) ||
+                (y < startY &&
+                  window.pageYOffset + window.innerHeight >=
+                    document.body.scrollHeight)
+              ) {
+                e.preventDefault();
+              }
+            },
+            { passive: false }
+          );
+
+          // Hide Safari address bar on load
+          setTimeout(() => {
+            window.scrollTo(0, 1);
+            setTimeout(() => window.scrollTo(0, 0), 100);
+          }, 500);
+        }
 
         // Try to enter fullscreen on mobile when game starts
         function attemptFullscreen() {
@@ -1115,6 +1249,15 @@
             document.documentElement.webkitRequestFullscreen
           ) {
             document.documentElement.webkitRequestFullscreen();
+          }
+
+          // Safari-specific fullscreen attempt
+          if (isSafariMobile) {
+            // Try to trigger Safari fullscreen mode
+            setTimeout(() => {
+              window.scrollTo(0, 1);
+              setTimeout(() => window.scrollTo(0, 0), 200);
+            }, 1000);
           }
         }
 
@@ -1253,31 +1396,32 @@
           const dx = touch.clientX - joystickCenter.x;
           const dy = touch.clientY - joystickCenter.y;
           const distance = Math.sqrt(dx * dx + dy * dy);
-          const maxDistance = 40; // Half of joystick radius
+          const maxDistance = 50; // Adjusted for better joystick response
 
           if (distance <= maxDistance) {
             joystickInput.x = dx / maxDistance;
             joystickInput.y = dy / maxDistance;
-            knob.style.transform = `translate(${dx - 20}px, ${dy - 20}px)`;
+            knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
           } else {
             const angle = Math.atan2(dy, dx);
             const limitedX = Math.cos(angle) * maxDistance;
             const limitedY = Math.sin(angle) * maxDistance;
             joystickInput.x = limitedX / maxDistance;
             joystickInput.y = limitedY / maxDistance;
-            knob.style.transform = `translate(${limitedX - 20}px, ${
-              limitedY - 20
-            }px)`;
+            knob.style.transform = `translate(calc(-50% + ${limitedX}px), calc(-50% + ${limitedY}px))`;
           }
         });
 
-        joystick.addEventListener("touchend", (e) => {
+        function resetJoystick(e) {
           e.preventDefault();
           joystickActive = false;
           joystickInput.x = 0;
           joystickInput.y = 0;
           knob.style.transform = "translate(-50%, -50%)";
-        });
+        }
+
+        joystick.addEventListener("touchend", resetJoystick);
+        joystick.addEventListener("touchcancel", resetJoystick);
 
         // Mobile buttons - handle both touch and click
         function setupMobileButtons() {
@@ -1336,18 +1480,51 @@
 
         setupMobileButtons();
 
-        // Prevent scrolling on touch
-        document.body.addEventListener(
-          "touchstart",
-          (e) => e.preventDefault(),
-          { passive: false }
-        );
-        document.body.addEventListener("touchend", (e) => e.preventDefault(), {
+        // Enhanced scroll prevention for all mobile browsers
+        function preventDefaultTouch(e) {
+          // Don't prevent touch events on interactive game elements
+          const gameElements = [
+            "virtualJoystick",
+            "joystickKnob",
+            "pickupButton",
+            "shootButton",
+            "startButton",
+            "closeInstructions",
+          ];
+          const isGameElement = gameElements.some(
+            (id) => e.target.id === id || e.target.closest(`#${id}`)
+          );
+
+          if (!isGameElement && !e.target.closest(".instructions-overlay")) {
+            e.preventDefault();
+          }
+        }
+
+        // Apply to document for comprehensive coverage
+        document.addEventListener("touchstart", preventDefaultTouch, {
           passive: false,
         });
-        document.body.addEventListener("touchmove", (e) => e.preventDefault(), {
+        document.addEventListener("touchmove", preventDefaultTouch, {
           passive: false,
         });
+        document.addEventListener("touchend", preventDefaultTouch, {
+          passive: false,
+        });
+
+        // Additional prevention for Safari
+        if (isSafariMobile) {
+          document.addEventListener("gesturestart", (e) => e.preventDefault(), {
+            passive: false,
+          });
+          document.addEventListener(
+            "gesturechange",
+            (e) => e.preventDefault(),
+            { passive: false }
+          );
+          document.addEventListener("gestureend", (e) => e.preventDefault(), {
+            passive: false,
+          });
+        }
       }
 
       // Game functions
