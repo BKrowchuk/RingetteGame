@@ -554,6 +554,81 @@
       <div id="ui">
         <div class="score-display" id="scoreDisplay">Score: 0</div>
         <div class="shot-clock" id="shotClock">30s</div>
+
+        <!-- Ring Debug overlay -->
+        <div
+          id="ringDebugOverlay"
+          style="
+            position: absolute;
+            top: 80px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-family: monospace;
+            font-size: 12px;
+            padding: 10px;
+            border-radius: 5px;
+            line-height: 1.2;
+            max-width: 300px;
+            z-index: 25;
+            display: none;
+          "
+        >
+          <div>
+            🏒 <strong>Ring Debug</strong>
+            <span
+              id="debugModeIndicator"
+              style="color: #ffaa00; font-weight: bold"
+            ></span>
+          </div>
+          <div>
+            Player Has Ring:
+            <span
+              id="debugPlayerHasRing"
+              style="font-weight: bold; color: #00ff00"
+              >false</span
+            >
+          </div>
+          <div>
+            Ring Active:
+            <span id="debugRingActive" style="font-weight: bold">false</span>
+          </div>
+          <div>Ring Position: <span id="debugRingPosition">0, 0</span></div>
+          <div>Player Position: <span id="debugPlayerPosition">0, 0</span></div>
+          <div>
+            Distance: <span id="debugDistance">0</span> (Range:
+            <span id="debugPickupRange">70</span>)
+          </div>
+          <br />
+          <div>🔵 <strong>Button States</strong></div>
+          <div>
+            Pickup Available:
+            <span id="debugPickupAvailable" style="font-weight: bold"
+              >false</span
+            >
+          </div>
+          <div>
+            Shoot Available:
+            <span id="debugShootAvailable" style="font-weight: bold"
+              >false</span
+            >
+          </div>
+          <br />
+          <button
+            id="ringDebugToggle"
+            style="
+              background: #006194;
+              color: white;
+              border: none;
+              padding: 5px 10px;
+              border-radius: 3px;
+              cursor: pointer;
+              font-size: 11px;
+            "
+          >
+            Toggle Console Logs
+          </button>
+        </div>
       </div>
 
       <div class="instructions-overlay" id="instructionsOverlay">
@@ -656,6 +731,94 @@
       let joystickCenter = { x: 0, y: 0 };
       let joystickInput = { x: 0, y: 0 };
 
+      // Debug flags for ring interactions
+      let debugRingActions = true;
+      let debugButtons = true;
+
+      // Debug display update function for ring interactions
+      function updateRingDebugDisplay() {
+        if (!isMobile) return;
+
+        const debugOverlay = document.getElementById("ringDebugOverlay");
+        const debugPlayerHasRing =
+          document.getElementById("debugPlayerHasRing");
+        const debugRingActive = document.getElementById("debugRingActive");
+        const debugRingPosition = document.getElementById("debugRingPosition");
+        const debugPlayerPositionEl = document.getElementById(
+          "debugPlayerPosition"
+        );
+        const debugDistance = document.getElementById("debugDistance");
+        const debugPickupRange = document.getElementById("debugPickupRange");
+        const debugPickupAvailable = document.getElementById(
+          "debugPickupAvailable"
+        );
+        const debugShootAvailable = document.getElementById(
+          "debugShootAvailable"
+        );
+        const debugModeIndicator =
+          document.getElementById("debugModeIndicator");
+
+        if (debugOverlay && player && ring) {
+          debugOverlay.style.display = "block";
+
+          // Show debug mode status
+          if (!gameRunning && debugButtons) {
+            debugOverlay.style.borderColor = "#ffaa00";
+            debugOverlay.style.borderWidth = "2px";
+            debugOverlay.style.borderStyle = "solid";
+            debugModeIndicator.textContent = "(TEST MODE)";
+          } else {
+            debugOverlay.style.border = "none";
+            debugModeIndicator.textContent = "";
+          }
+
+          // Calculate current distance for pickup
+          const playerCenterX = player.x + player.width / 2;
+          const playerCenterY = player.y + player.height / 2;
+          const ringCenterX = ring.x + ring.width / 2;
+          const ringCenterY = ring.y + ring.height / 2;
+          const distance = Math.sqrt(
+            (ringCenterX - playerCenterX) ** 2 +
+              (ringCenterY - playerCenterY) ** 2
+          );
+
+          // Update display values
+          debugPlayerHasRing.textContent = player.hasRing;
+          debugPlayerHasRing.style.color = player.hasRing
+            ? "#00ff00"
+            : "#ff0000";
+
+          debugRingActive.textContent = ring.active;
+          debugRingActive.style.color = ring.active ? "#ffaa00" : "#888888";
+
+          debugRingPosition.textContent = `${ring.x.toFixed(
+            1
+          )}, ${ring.y.toFixed(1)}`;
+          debugPlayerPositionEl.textContent = `${player.x.toFixed(
+            1
+          )}, ${player.y.toFixed(1)}`;
+
+          debugDistance.textContent = distance.toFixed(1);
+          debugPickupRange.textContent = PICKUP_RANGE;
+
+          // Button availability (debug mode allows testing without gameRunning)
+          const pickupAvailable =
+            (gameRunning || debugButtons) && distance <= PICKUP_RANGE;
+          const shootAvailable =
+            (gameRunning || debugButtons) && player.hasRing;
+
+          debugPickupAvailable.textContent = pickupAvailable;
+          debugPickupAvailable.style.color = pickupAvailable
+            ? "#00ff00"
+            : "#ff0000";
+
+          debugShootAvailable.textContent = shootAvailable;
+          debugShootAvailable.style.color = shootAvailable
+            ? "#00ff00"
+            : "#ff0000";
+        }
+      }
+
       // Game Objects
       let player, ring, goal1, goal2, goalie1, goalie2;
 
@@ -742,9 +905,23 @@
         }
 
         getShootDirection() {
-          // Calculate direction from ring to mouse/forward direction
+          // Calculate direction from ring to mouse/joystick direction
           if (isMobile) {
-            // For mobile, shoot in the direction the player is facing
+            // For mobile, shoot in the direction of the joystick
+            if (
+              Math.abs(joystickInput.x) > 0.1 ||
+              Math.abs(joystickInput.y) > 0.1
+            ) {
+              // Use current joystick direction for shooting
+              const length = Math.sqrt(
+                joystickInput.x * joystickInput.x +
+                  joystickInput.y * joystickInput.y
+              );
+              if (length > 0) {
+                return [joystickInput.x / length, joystickInput.y / length];
+              }
+            }
+            // Fallback to player facing direction if joystick is not being used
             return this.direction;
           } else {
             // For desktop, shoot toward mouse from ring position
@@ -1313,7 +1490,7 @@
 
         // Handle both click and touch for ring pickup
         function handleCanvasTouch(e) {
-          if (!gameRunning) return;
+          if (!gameRunning && !debugButtons) return;
           e.preventDefault();
 
           const rect = canvas.getBoundingClientRect();
@@ -1444,48 +1621,188 @@
 
           function handlePickup(e) {
             e.preventDefault();
-            if (!gameRunning) return;
+
+            const timestamp = Date.now();
+            if (debugButtons) {
+              console.log("🔵 PICKUP BUTTON PRESSED:");
+              console.log(
+                "  Timestamp:",
+                new Date(timestamp).toLocaleTimeString()
+              );
+              console.log("  Event type:", e.type);
+              console.log("  Game running:", gameRunning);
+              console.log("  Player has ring:", player.hasRing);
+              console.log(
+                "  Player position:",
+                player.x + player.width / 2,
+                player.y + player.height / 2
+              );
+              console.log(
+                "  Ring position:",
+                ring.x + ring.width / 2,
+                ring.y + ring.height / 2
+              );
+              console.log("  Ring active:", ring.active);
+            }
+
+            if (!gameRunning) {
+              if (debugButtons) {
+                console.log("  ❌ PICKUP BLOCKED - Game not running");
+                console.log("  🧪 DEBUG MODE: Allowing pickup for testing...");
+                // Don't return - allow pickup for debugging even when game isn't running
+              }
+            }
+
             addRippleEffect(pickupBtn);
-            handleRingPickup(
-              player.x + player.width / 2,
-              player.y + player.height / 2
-            );
+            const playerCenterX = player.x + player.width / 2;
+            const playerCenterY = player.y + player.height / 2;
+
+            if (debugButtons) {
+              console.log(
+                "  Calling handleRingPickup with coordinates:",
+                playerCenterX,
+                playerCenterY
+              );
+            }
+
+            handleRingPickup(playerCenterX, playerCenterY);
           }
 
           function handleShoot(e) {
             e.preventDefault();
-            if (player.hasRing && gameRunning) {
+
+            const timestamp = Date.now();
+            if (debugButtons) {
+              console.log("🔴 SHOOT BUTTON PRESSED:");
+              console.log(
+                "  Timestamp:",
+                new Date(timestamp).toLocaleTimeString()
+              );
+              console.log("  Event type:", e.type);
+              console.log("  Game running:", gameRunning);
+              console.log("  Player has ring:", player.hasRing);
+              console.log("  Ring active:", ring.active);
+              console.log("  Can shoot check:", player.hasRing && gameRunning);
+            }
+
+            // Allow shooting if player has ring (debug mode allows testing without gameRunning)
+            if (player.hasRing && (gameRunning || debugButtons)) {
+              if (debugButtons) {
+                if (!gameRunning) {
+                  console.log(
+                    "  🧪 DEBUG MODE: Allowing shooting for testing..."
+                  );
+                }
+                console.log(
+                  "  ✅ SHOOTING CONDITIONS MET - Executing shootRing()"
+                );
+              }
               addRippleEffect(shootBtn);
               shootRing();
+            } else {
+              if (debugButtons) {
+                console.log("  ❌ SHOOTING BLOCKED:");
+                console.log("    Player has ring:", player.hasRing);
+                console.log("    Game running:", gameRunning);
+                console.log("    Debug mode:", debugButtons);
+                if (!player.hasRing) {
+                  console.log("    Reason: Player doesn't have the ring");
+                }
+                if (!gameRunning && !debugButtons) {
+                  console.log(
+                    "    Reason: Game is not running and not in debug mode"
+                  );
+                }
+              }
             }
           }
 
           // Enhanced touch handling for pickup button
           pickupBtn.addEventListener("touchstart", (e) => {
             e.preventDefault();
+            if (debugButtons) {
+              console.log(
+                "🔵 PICKUP BUTTON TOUCHSTART - Visual feedback applied"
+              );
+            }
             pickupBtn.style.transform = "scale(0.95)";
           });
-          pickupBtn.addEventListener("touchend", handlePickup);
+          pickupBtn.addEventListener("touchend", (e) => {
+            if (debugButtons) {
+              console.log("🔵 PICKUP BUTTON TOUCHEND - Calling handlePickup");
+            }
+            handlePickup(e);
+          });
           pickupBtn.addEventListener("touchcancel", (e) => {
             e.preventDefault();
+            if (debugButtons) {
+              console.log(
+                "🔵 PICKUP BUTTON TOUCHCANCEL - Reset visual feedback"
+              );
+            }
             pickupBtn.style.transform = "";
           });
-          pickupBtn.addEventListener("click", handlePickup);
+          pickupBtn.addEventListener("click", (e) => {
+            if (debugButtons) {
+              console.log("🔵 PICKUP BUTTON CLICK - Calling handlePickup");
+            }
+            handlePickup(e);
+          });
 
           // Enhanced touch handling for shoot button
           shootBtn.addEventListener("touchstart", (e) => {
             e.preventDefault();
+            if (debugButtons) {
+              console.log(
+                "🔴 SHOOT BUTTON TOUCHSTART - Visual feedback applied"
+              );
+            }
             shootBtn.style.transform = "scale(0.95)";
           });
-          shootBtn.addEventListener("touchend", handleShoot);
+          shootBtn.addEventListener("touchend", (e) => {
+            if (debugButtons) {
+              console.log("🔴 SHOOT BUTTON TOUCHEND - Calling handleShoot");
+            }
+            handleShoot(e);
+          });
           shootBtn.addEventListener("touchcancel", (e) => {
             e.preventDefault();
+            if (debugButtons) {
+              console.log(
+                "🔴 SHOOT BUTTON TOUCHCANCEL - Reset visual feedback"
+              );
+            }
             shootBtn.style.transform = "";
           });
-          shootBtn.addEventListener("click", handleShoot);
+          shootBtn.addEventListener("click", (e) => {
+            if (debugButtons) {
+              console.log("🔴 SHOOT BUTTON CLICK - Calling handleShoot");
+            }
+            handleShoot(e);
+          });
         }
 
         setupMobileButtons();
+
+        // Setup ring debug toggle button
+        const ringDebugToggle = document.getElementById("ringDebugToggle");
+        if (ringDebugToggle) {
+          ringDebugToggle.addEventListener("click", (e) => {
+            e.preventDefault();
+            debugRingActions = !debugRingActions;
+            debugButtons = !debugButtons;
+            console.log(
+              "🐛 Ring debug logging toggled:",
+              debugRingActions ? "ON" : "OFF"
+            );
+            ringDebugToggle.textContent = debugRingActions
+              ? "Disable Console Logs"
+              : "Enable Console Logs";
+          });
+          ringDebugToggle.textContent = debugRingActions
+            ? "Disable Console Logs"
+            : "Enable Console Logs";
+        }
 
         // Enhanced scroll prevention for all mobile browsers
         function preventDefaultTouch(e) {
@@ -1542,32 +1859,177 @@
       }
 
       function shootRing() {
+        if (debugRingActions) {
+          console.log("🚀 SHOOT RING FUNCTION CALLED:");
+          console.log(
+            "  Player position:",
+            player.x.toFixed(1),
+            player.y.toFixed(1)
+          );
+          console.log("  Player direction:", player.direction);
+          console.log("  Current player.hasRing:", player.hasRing);
+          console.log("  Current ring.active:", ring.active);
+          console.log(
+            "  Current ring position:",
+            ring.x.toFixed(1),
+            ring.y.toFixed(1)
+          );
+        }
+
+        const previousHasRing = player.hasRing;
+        const previousRingActive = ring.active;
+        const previousRingPos = { x: ring.x, y: ring.y };
+
         player.hasRing = false;
         ring.active = true;
+
         // Position ring at the end of the stick (bottom-right of player)
-        ring.x = player.x + player.width - 10; // Ring's left edge near player's right edge
-        ring.y = player.y + player.height - 10; // Ring's top edge near player's bottom edge
+        const newRingX = player.x + player.width - 10;
+        const newRingY = player.y + player.height - 10;
+        ring.x = newRingX;
+        ring.y = newRingY;
 
         const direction = player.getShootDirection();
-        ring.velocity = [direction[0] * RING_SPEED, direction[1] * RING_SPEED];
+        const velocityX = direction[0] * RING_SPEED;
+        const velocityY = direction[1] * RING_SPEED;
+        ring.velocity = [velocityX, velocityY];
         ring.decayFactor = 0.99;
         shotClock = SHOT_CLOCK_DURATION;
+
+        if (debugRingActions) {
+          console.log("  ✅ SHOOTING EXECUTED:");
+          console.log("    State changes:");
+          console.log(
+            "      player.hasRing:",
+            previousHasRing,
+            "->",
+            player.hasRing
+          );
+          console.log(
+            "      ring.active:",
+            previousRingActive,
+            "->",
+            ring.active
+          );
+          console.log("    Position changes:");
+          console.log(
+            "      Ring position:",
+            previousRingPos.x.toFixed(1),
+            previousRingPos.y.toFixed(1),
+            "->",
+            ring.x.toFixed(1),
+            ring.y.toFixed(1)
+          );
+          console.log("    Shooting details:");
+          console.log(
+            "      Direction vector:",
+            direction[0].toFixed(3),
+            direction[1].toFixed(3)
+          );
+          console.log("      RING_SPEED:", RING_SPEED);
+          console.log(
+            "      Velocity applied:",
+            velocityX.toFixed(2),
+            velocityY.toFixed(2)
+          );
+          console.log("      Decay factor:", ring.decayFactor);
+          console.log("      Shot clock reset to:", shotClock);
+          console.log(
+            "    Mobile detection:",
+            isMobile
+              ? "Mobile - shooting forward"
+              : "Desktop - shooting toward mouse"
+          );
+        }
       }
 
       function handleRingPickup(x, y) {
-        const dx = ring.x + ring.width / 2 - x;
-        const dy = ring.y + ring.height / 2 - y;
+        if (debugRingActions) {
+          console.log("🏒 HANDLE RING PICKUP CALLED:");
+          console.log("  Click/Touch coordinates:", x.toFixed(1), y.toFixed(1));
+          console.log(
+            "  Ring center position:",
+            (ring.x + ring.width / 2).toFixed(1),
+            (ring.y + ring.height / 2).toFixed(1)
+          );
+          console.log(
+            "  Player center position:",
+            (player.x + player.width / 2).toFixed(1),
+            (player.y + player.height / 2).toFixed(1)
+          );
+          console.log("  Current player.hasRing:", player.hasRing);
+          console.log("  Current ring.active:", ring.active);
+        }
+
+        const ringCenterX = ring.x + ring.width / 2;
+        const ringCenterY = ring.y + ring.height / 2;
+        const dx = ringCenterX - x;
+        const dy = ringCenterY - y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
+        if (debugRingActions) {
+          console.log("  Distance calculation:");
+          console.log("    dx (ring - click):", dx.toFixed(2));
+          console.log("    dy (ring - click):", dy.toFixed(2));
+          console.log("    Distance:", distance.toFixed(2));
+          console.log("    PICKUP_RANGE:", PICKUP_RANGE);
+          console.log("    Within range?", distance <= PICKUP_RANGE);
+        }
+
         if (distance <= PICKUP_RANGE) {
+          const previousHasRing = player.hasRing;
           player.hasRing = !player.hasRing;
+
+          if (debugRingActions) {
+            console.log("  ✅ PICKUP SUCCESSFUL:");
+            console.log("    Previous player.hasRing:", previousHasRing);
+            console.log("    New player.hasRing:", player.hasRing);
+          }
+
           if (player.hasRing) {
-            // Position ring at the end of the stick (bottom-right of player)
-            ring.x = player.x + player.width - 10; // Ring's left edge near player's right edge
-            ring.y = player.y + player.height - 10; // Ring's top edge near player's bottom edge
+            // Picking up the ring
+            const newRingX = player.x + player.width - 10;
+            const newRingY = player.y + player.height - 10;
+
+            if (debugRingActions) {
+              console.log("    🎯 PICKING UP RING:");
+              console.log(
+                "      Ring position before:",
+                ring.x.toFixed(1),
+                ring.y.toFixed(1)
+              );
+              console.log(
+                "      Ring position after:",
+                newRingX.toFixed(1),
+                newRingY.toFixed(1)
+              );
+              console.log("      Setting ring.active = false");
+              console.log("      Setting ring.velocity = [0, 0]");
+              console.log("      Setting ringPickedUpSinceGoal = true");
+            }
+
+            ring.x = newRingX;
+            ring.y = newRingY;
             ring.active = false;
             ring.velocity = [0, 0];
             ringPickedUpSinceGoal = true;
+          } else {
+            // Dropping the ring
+            if (debugRingActions) {
+              console.log("    📤 DROPPING RING:");
+              console.log("      Ring remains at current position");
+            }
+          }
+        } else {
+          if (debugRingActions) {
+            console.log("  ❌ PICKUP FAILED - Too far from ring");
+            console.log("    Distance:", distance.toFixed(2));
+            console.log("    Required range:", PICKUP_RANGE);
+            console.log(
+              "    Difference:",
+              (distance - PICKUP_RANGE).toFixed(2),
+              "pixels too far"
+            );
           }
         }
       }
@@ -1710,10 +2172,36 @@
           // Check collisions
           checkGoals();
           checkGoalieInteractions();
+
+          // Update debug display
+          updateRingDebugDisplay();
         } else {
           // Allow player movement testing during instructions screen
           if (isMobile) {
             player.update();
+
+            // Update ring position if player has it (debug mode)
+            if (player.hasRing && !ring.active) {
+              // Position ring at the end of the stick (bottom-right of player)
+              ring.x = player.x + player.width - 10; // Ring's left edge near player's right edge
+              ring.y = player.y + player.height - 10; // Ring's top edge near player's bottom edge
+
+              if (debugRingActions) {
+                console.log("🔄 DEBUG MODE - Ring following player:");
+                console.log(
+                  "  Ring moved to:",
+                  ring.x.toFixed(1),
+                  ring.y.toFixed(1)
+                );
+                console.log(
+                  "  Player position:",
+                  player.x.toFixed(1),
+                  player.y.toFixed(1)
+                );
+              }
+            }
+
+            updateRingDebugDisplay();
           }
         }
 
