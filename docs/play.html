@@ -1458,7 +1458,6 @@
 
           function handlePickup(e) {
             e.preventDefault();
-            console.log("picking up ring");
 
             if (!gameRunning) return;
 
@@ -1559,7 +1558,6 @@
       }
 
       function shootRing() {
-        console.log("shooting ring");
         player.hasRing = false;
         ring.active = true;
 
@@ -1576,7 +1574,6 @@
       }
 
       function handleRingPickup(x, y) {
-        console.log("picking up ring");
         const ringCenterX = ring.x + ring.width / 2;
         const ringCenterY = ring.y + ring.height / 2;
         const dx = ringCenterX - x;
