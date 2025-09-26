@@ -16,15 +16,18 @@
     <meta name="theme-color" content="#0a0a0a" />
     <meta name="msapplication-navbutton-color" content="#0a0a0a" />
     <meta name="apple-mobile-web-app-title" content="Ringette Game" />
-    
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="./manifest.json" />
-    
+
     <!-- iOS specific PWA meta tags -->
     <link rel="apple-touch-icon" href="./icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+
     <title>Ringette Game</title>
     <style>
       * {
@@ -1793,42 +1796,49 @@
       window.addEventListener("load", initGame);
 
       // Register Service Worker for PWA functionality
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(registration => {
-              console.log('PWA: Service Worker registered successfully', registration.scope);
-              
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((registration) => {
+              console.log(
+                "PWA: Service Worker registered successfully",
+                registration.scope
+              );
+
               // Check for updates
-              registration.addEventListener('updatefound', () => {
+              registration.addEventListener("updatefound", () => {
                 const newWorker = registration.installing;
-                newWorker.addEventListener('statechange', () => {
-                  if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                newWorker.addEventListener("statechange", () => {
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
                     // New content available, reload to update
-                    console.log('PWA: New content available, reloading...');
+                    console.log("PWA: New content available, reloading...");
                     window.location.reload();
                   }
                 });
               });
             })
-            .catch(error => {
-              console.log('PWA: Service Worker registration failed', error);
+            .catch((error) => {
+              console.log("PWA: Service Worker registration failed", error);
             });
         });
 
         // Handle app installation
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-          console.log('PWA: Install prompt available');
+        window.addEventListener("beforeinstallprompt", (e) => {
+          console.log("PWA: Install prompt available");
           e.preventDefault();
           deferredPrompt = e;
-          
+
           // Optionally show custom install button
           // showInstallButton();
         });
 
-        window.addEventListener('appinstalled', (e) => {
-          console.log('PWA: App installed successfully');
+        window.addEventListener("appinstalled", (e) => {
+          console.log("PWA: App installed successfully");
           deferredPrompt = null;
         });
       }

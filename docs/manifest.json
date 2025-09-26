@@ -17,7 +17,7 @@
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png", 
+      "src": "icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
@@ -40,7 +40,7 @@
   "screenshots": [
     {
       "src": "screenshot-wide.png",
-      "sizes": "1920x1080", 
+      "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Ringette Game in landscape mode"
