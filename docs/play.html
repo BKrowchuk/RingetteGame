@@ -137,8 +137,8 @@
         font-size: 20px;
         cursor: pointer;
         padding: 0;
-        width: 44px;
-        height: 44px;
+        width: 25px;
+        height: 25px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -635,6 +635,7 @@
       let score = 0;
       let shotClock = SHOT_CLOCK_DURATION;
       let lastTime = 0;
+      let lastShotClockUpdate = 0;
       let ringPickedUpSinceGoal = false;
 
       // Input handling
@@ -678,25 +679,25 @@
           this.direction = [1, 0];
         }
 
-        update() {
+        update(frameMultiplier = 1) {
           let dx = 0,
             dy = 0;
 
           // Desktop controls
           if (keys["ArrowLeft"] || keys["KeyA"]) {
-            dx = -PLAYER_SPEED;
+            dx = -PLAYER_SPEED * frameMultiplier;
             this.direction = [-1, 0];
           }
           if (keys["ArrowRight"] || keys["KeyD"]) {
-            dx = PLAYER_SPEED;
+            dx = PLAYER_SPEED * frameMultiplier;
             this.direction = [1, 0];
           }
           if (keys["ArrowUp"] || keys["KeyW"]) {
-            dy = -PLAYER_SPEED;
+            dy = -PLAYER_SPEED * frameMultiplier;
             this.direction = [0, -1];
           }
           if (keys["ArrowDown"] || keys["KeyS"]) {
-            dy = PLAYER_SPEED;
+            dy = PLAYER_SPEED * frameMultiplier;
             this.direction = [0, 1];
           }
 
@@ -718,8 +719,14 @@
               return result;
             };
 
-            const rawDx = sensitivityCurve(joystickInput.x) * PLAYER_SPEED;
-            const rawDy = sensitivityCurve(joystickInput.y) * PLAYER_SPEED;
+            const rawDx =
+              sensitivityCurve(joystickInput.x) *
+              PLAYER_SPEED *
+              frameMultiplier;
+            const rawDy =
+              sensitivityCurve(joystickInput.y) *
+              PLAYER_SPEED *
+              frameMultiplier;
 
             dx = rawDx;
             dy = rawDy;
@@ -806,7 +813,7 @@
           this.decayFactor = 0.99;
         }
 
-        update() {
+        update(frameMultiplier = 1) {
           if (this.active) {
             this.velocity[0] *= this.decayFactor;
             this.velocity[1] *= this.decayFactor;
@@ -818,8 +825,9 @@
               this.velocity = [0, 0];
             }
 
-            this.x += this.velocity[0];
-            this.y += this.velocity[1];
+            // Apply velocity with frame-rate independence
+            this.x += this.velocity[0] * frameMultiplier;
+            this.y += this.velocity[1] * frameMultiplier;
 
             // Bounce off walls
             if (this.x < 0 || this.x > RINK_WIDTH - this.width) {
@@ -1698,9 +1706,20 @@
 
       // Main game loop
       function gameLoop(currentTime) {
+        // Initialize lastTime on first frame
+        if (lastTime === 0) {
+          lastTime = currentTime;
+          requestAnimationFrame(gameLoop);
+          return;
+        }
+
+        // Calculate delta time for frame-rate independent movement
+        const deltaTime = currentTime - lastTime;
+        const frameMultiplier = deltaTime / 16.67; // 16.67ms = 60 FPS baseline
+
         if (gameRunning) {
-          // Update shot clock
-          if (currentTime - lastTime >= 1000) {
+          // Update shot clock (track separately from frame timing)
+          if (currentTime - lastShotClockUpdate >= 1000) {
             if (ringPickedUpSinceGoal) {
               shotClock--;
               if (shotClock <= 0) {
@@ -1714,12 +1733,12 @@
               }
             }
             updateShotClock();
-            lastTime = currentTime;
+            lastShotClockUpdate = currentTime;
           }
 
-          // Update game objects
-          player.update();
-          ring.update();
+          // Update game objects with frame-rate independent movement
+          player.update(frameMultiplier);
+          ring.update(frameMultiplier);
           updateGoalies();
 
           // Update ring position if player has it
@@ -1735,7 +1754,7 @@
         } else {
           // Allow player movement testing during instructions screen
           if (isMobile) {
-            player.update();
+            player.update(frameMultiplier);
 
             // Update ring position if player has it
             if (player.hasRing && !ring.active) {
@@ -1754,6 +1773,9 @@
         goalie2.draw();
         ring.draw();
         player.draw();
+
+        // Update lastTime for next frame
+        lastTime = currentTime;
 
         requestAnimationFrame(gameLoop);
       }
