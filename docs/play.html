@@ -1278,38 +1278,6 @@
             setTimeout(() => window.scrollTo(0, 0), 100);
           }, 500);
         }
-
-        // Try to enter fullscreen on mobile when game starts
-        function attemptFullscreen() {
-          if (isMobile && document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {
-              // Fullscreen failed, but that's okay
-            });
-          } else if (
-            isMobile &&
-            document.documentElement.webkitRequestFullscreen
-          ) {
-            document.documentElement.webkitRequestFullscreen();
-          }
-
-          // Safari-specific fullscreen attempt
-          if (isSafariMobile) {
-            // Try to trigger Safari fullscreen mode
-            setTimeout(() => {
-              window.scrollTo(0, 1);
-              setTimeout(() => window.scrollTo(0, 0), 200);
-            }, 1000);
-          }
-        }
-
-        // Add fullscreen attempt to start game
-        const originalStartGame = window.startGame;
-        window.startGame = function () {
-          originalStartGame();
-          if (isMobile) {
-            attemptFullscreen();
-          }
-        };
       }
 
       // Event Listeners
